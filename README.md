@@ -34,3 +34,15 @@ A quick internet search revealed [this](http://www.picturecorrect.com/tips/how-t
 I have (had?) it working for my camera and one lens. Thanks to a recent version of gphoto2, I was able to script the changes of the micro-adjustment settings (so I did not have to go though the camera's menus all the time and was instead able to sit back and enjoy 'the show').
 
 The sharpness parameter(s) certainly are wild guesses, the setup possibly wasn't ideal, but the plots did reveal a trend in the adjustment setting. I say 'reveal a trend': it may all be noise and a foolish setting after all - tests out and about are still pending.
+
+This shows an early screenshot with two `gnuplot` windows showing two sharpness parameters for two either to focal lengths or simply two iterations of the script (can't remember, my guess is focal lengths).
+![an early screenshot](https://github.com/di-br/CalMAdju/blob/master/examples/AFMADJ_01.png "an early screenshot")
+
+The current evolution of things is shown in the next few pictures. Starting with a 'progress window' while the script is running:
+![progress](https://github.com/di-br/CalMAdju/blob/master/examples/AFMADJ_02.png "progress")
+
+A 'final status', also showing a simple minded fit the sharpness values:
+![result](https://github.com/di-br/CalMAdju/blob/master/examples/AFMADJ_03.png "result")
+
+And the final line from the script with the suggested adjustment value:
+![suggestion](https://github.com/di-br/CalMAdju/blob/master/examples/AFMADJ_04.png "suggestion")
