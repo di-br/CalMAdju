@@ -56,6 +56,7 @@ def check_version():
 
 # set up custom parameter strings for known cameras
 # NOTE: currently only a Canon EOS 7D is known
+# this MAY only work for one lens. using another lens with this command only repeatedly crashed the camera...
 customfuncex = {}
 customfuncex['Canon EOS 7D'] = 'c4,1,3,b8,d,502,1,0,504,1,0,503,1,0,505,1,0,507,5,2,2,VALUE,2,0,512,2,0,17,513,1,1,510,1,0,514,1,0,515,1,0,50e,1,0,516,1,1,60f,1,0,'
 
