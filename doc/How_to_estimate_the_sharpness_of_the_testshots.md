@@ -9,8 +9,8 @@ Do your own search and see what you like. I've probably missed **the** standard 
 Resources I came across involved (nothing an internet search doesn't find):
 
 1. a [talk](http://www.csl.cornell.edu/~cbatten/pdfs/batten-image-processing-sem-slides-scanning2001.pdf) on sharpness for SEMs
-2. various discussions on stackoverflow, [1](https://stackoverflow.com/questions/6123443/calculating-image-acutance/6129542#6129542), [2](https://stackoverflow.com/questions/6646371/detect-which-image-is-sharper), [3](https://stackoverflow.com/questions/17887883/image-sharpness-metric)(actually lead me to the paper above)
-3. [Examples](https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_gradients/py_gradients.html#gradients) of sorts
+2. various discussions on stackoverflow, [1](https://stackoverflow.com/questions/6123443/calculating-image-acutance/6129542#6129542), [2](https://stackoverflow.com/questions/6646371/detect-which-image-is-sharper), [3](https://stackoverflow.com/questions/17887883/image-sharpness-metric) (actually lead me to the paper above)
+3. [examples](https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_gradients/py_gradients.html#gradients) of sorts
 
 ## Implemented/tested within the script
 * 'Variance method'

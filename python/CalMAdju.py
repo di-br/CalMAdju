@@ -328,9 +328,9 @@ def find_best_madj(data):
         if (data[val+20] != 0):
             x_data.append(val)
             y_data.append(data[val+20])
-            if (data[val] < minval):
+            if (data[val+20] < minval):
                 minval = data[val+20]
-            if(data[val] > maxval):
+            if (data[val+20] > maxval):
                 maxval = data[val+20]
 
     popt, pcov = curve_fit(func, x_data, y_data, p0=[maxval, 0, 1])
@@ -343,7 +343,9 @@ def find_best_madj(data):
     plt.title('sharpness values')
     plt.ylabel('sharpness')
     plt.xlabel('microadjustment')
-    plt.plot(x_data, y_data, 'bo', x_data2, func(x_data2, popt[0], popt[1], popt[2]), 'k')
+    plt.plot(x_data, y_data, 'bo',
+             x_data2, func(x_data2, popt[0], popt[1], popt[2]), 'k',
+             int(popt[1]), func(int(popt[1]), popt[0], popt[1], popt[2]),'ro')
     plt.ylim([minval*.9,maxval*1.1])
     plt.draw()
 
