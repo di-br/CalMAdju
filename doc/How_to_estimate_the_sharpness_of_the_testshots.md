@@ -21,7 +21,7 @@ Resources I came across involved (nothing an internet search doesn't find):
   var = (reduced_img-avg_img)**2
   score = var.sum()/np.size(var)
   ```
-  Here, `reduced_img` is a selected smaller region including parts of the target and all images are processed in greyscale. The first line computes the average grey value, the second line estimates the variance of the pixels, the last line normalises to a score value.
+  Here, `reduced_img` is a selected smaller region including parts of the target. Also, all images are processed in greyscale. The first line computes the average grey value, the second line estimates the variance of the pixels, the last line normalises to a score value.
 
 * 'Gradient method'
 
@@ -33,7 +33,7 @@ Resources I came across involved (nothing an internet search doesn't find):
   ```
   Line 1 uses numpy for computing the gradients in `x` and `y` that line 2 will combine to an average per pixel which in turn will be averaged over the `reduced_img`.
 
-Yes, the last two lines are actually doing the same thing. I noticed (infact, there are yet other ways of writing this). I also noticed another small mishap in the code while typing the above, so it's all a process...
+Yes, the last (two) lines in either case are actually doing the same thing, I noticed (infact, there are yet other ways of writing this). I also noticed another small mishap in the code while typing the above, so it's all a process...
 
 
 ## Todo
