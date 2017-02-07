@@ -196,13 +196,13 @@ def estimate_sharpness(filename, x_window, y_window, switch):
     if not switch:
         # compute a variance measure that should provide a contrasty result
         avg_img = reduced_img.sum()/np.size(reduced_img)
-        var = (img-avg_img)**2
-        score = var.sum()/np.size(var)
+        var = (reduced_img-avg_img)**2
+        score = np.mean(var)
     else:
         # compute gradients in x and y
         gy, gx = np.gradient(reduced_img,2)
         gnorm = np.sqrt(gx**2 + gy**2)
-        score = np.average(gnorm)
+        score = np.mean(gnorm)
 
     return score
 
