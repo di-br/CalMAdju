@@ -382,16 +382,29 @@ run = 0
 plt.ion()
 display_default_and_current('reference.jpg', 'reference.jpg', x_window, y_window, data)
 
+# let's assume we have well-behaved parameters, then we can normalise them to any point, why not the first...
+sharpness_norm1_not_set = True
+sharpness_norm2_not_set = True
+
 for value in [-20, -15, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 15, 20]:
     set_AFmicroadjustment(value, auto_cam, cameras)
     current_image_name = "AFtest_iter_"+str(run)+"_adj_"+str(value)+".jpg"
     ## UNCOMMENT FOR NON-DRY-RUN
     #get_image(current_image_name)
-    sharpness = estimate_sharpness(current_image_name, x_window, y_window, False)
-    # keep the result
-    data[value+20] = sharpness
+    sharpness1 = estimate_sharpness(current_image_name, x_window, y_window, False)
+    # those tests for the normalised value should live in the function, really
+    if (sharpness_norm1_not_set):
+        sharpness_norm1_not_set = False
+        sharpness_norm1 = sharpness1
+    sharpness2 = estimate_sharpness(current_image_name, x_window, y_window, True)
+    if (sharpness_norm2_not_set):
+        sharpness_norm2_not_set = False
+        sharpness_norm2 = sharpness2
+    # keep the result, assuming both parameters are ok, so average the normalised values
+    data[value+20] = (sharpness1/sharpness_norm1 + sharpness2/sharpness_norm2)/2
+    # at a later stage, we should really fit both (or also the FFT one) independently and compare the results...
     display_current('reference.jpg', current_image_name, x_window, y_window, data)
-    print "sharpness ",sharpness," for adjustment", value
+    print "sharpness ",sharpness1," for adjustment", value
 
 print("press a key when ready\n")
 wait_key()
