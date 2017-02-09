@@ -10,6 +10,7 @@ import matplotlib as mpl
 mpl.rcParams['toolbar'] = 'None'
 # we use some of OpenCV's magic (barely)
 import cv2
+
 # check if we find the gphoto2 cdl utility
 try:
     from sh import gphoto2 as gp
@@ -176,8 +177,8 @@ def get_image(filename):
 
     return
 
-def estimate_sharpness(filename, x_window, y_window, switch):
-    ''' Estimate sharpness of the image by looking at a contrast value (optionally image gradients). '''
+def estimate_sharpness(filename, x_window, y_window):
+    ''' Estimate sharpness of the image by looking at a contrast value and image gradients. '''
     # read file
     try:
         # this will read the file in greyscale (argument 0)
@@ -192,19 +193,17 @@ def estimate_sharpness(filename, x_window, y_window, switch):
     y_center = height/2
 
     reduced_img = img[y_center-y_window:y_center+y_window,x_center-x_window:x_center+x_window]
-    # start with some extent
-    if not switch:
-        # compute a variance measure that should provide a contrasty result
-        avg_img = reduced_img.sum()/np.size(reduced_img)
-        var = (reduced_img-avg_img)**2
-        score = np.mean(var)
-    else:
-        # compute gradients in x and y
-        gy, gx = np.gradient(reduced_img,2)
-        gnorm = np.sqrt(gx**2 + gy**2)
-        score = np.mean(gnorm)
 
-    return score
+    # compute a variance measure that should provide a contrasty result
+    avg_img = reduced_img.sum()/np.size(reduced_img)
+    var = (reduced_img-avg_img)**2
+    score1 = np.mean(var)
+    # compute gradients in x and y
+    gy, gx = np.gradient(reduced_img,2)
+    gnorm = np.sqrt(gx**2 + gy**2)
+    score2 = np.mean(gnorm)
+
+    return [score1, score2]
 
 def find_center(filename):
     ''' Display image w/ matplotlib and have the user restrict the interesting area. '''
@@ -382,29 +381,25 @@ run = 0
 plt.ion()
 display_default_and_current('reference.jpg', 'reference.jpg', x_window, y_window, data)
 
-# let's assume we have well-behaved parameters, then we can normalise them to any point, why not the first...
-sharpness_norm1_not_set = True
-sharpness_norm2_not_set = True
+# normalising variables
+found_norm = False
+norm = [1.0, 1.0]
 
 for value in [-20, -15, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 15, 20]:
     set_AFmicroadjustment(value, auto_cam, cameras)
     current_image_name = "AFtest_iter_"+str(run)+"_adj_"+str(value)+".jpg"
     ## UNCOMMENT FOR NON-DRY-RUN
     #get_image(current_image_name)
-    sharpness1 = estimate_sharpness(current_image_name, x_window, y_window, False)
-    # those tests for the normalised value should live in the function, really
-    if (sharpness_norm1_not_set):
-        sharpness_norm1_not_set = False
-        sharpness_norm1 = sharpness1
-    sharpness2 = estimate_sharpness(current_image_name, x_window, y_window, True)
-    if (sharpness_norm2_not_set):
-        sharpness_norm2_not_set = False
-        sharpness_norm2 = sharpness2
+    sharpness = estimate_sharpness(current_image_name, x_window, y_window)
+    if (not found_norm):
+        found_norm = True
+        norm = sharpness
+    sharpness = [sharpness[0]/norm[0], sharpness[1]/norm[1]]
     # keep the result, assuming both parameters are ok, so average the normalised values
-    data[value+20] = (sharpness1/sharpness_norm1 + sharpness2/sharpness_norm2)/2
+    data[value+20] = np.mean(sharpness)
     # at a later stage, we should really fit both (or also the FFT one) independently and compare the results...
     display_current('reference.jpg', current_image_name, x_window, y_window, data)
-    print "sharpness ",sharpness1," for adjustment", value
+    print "sharpness ",sharpness," for adjustment", value
 
 print("press a key when ready\n")
 wait_key()
@@ -422,7 +417,7 @@ wait_key()
 ##    set_AFmicroadjustment(value, auto_cam, cameras)
 ##    current_image_name = "AFtest_iter_"+str(run)+"_adj_"+str(value)+".jpg"
 ##    get_image(current_image_name)
-##    sharpness = estimate_sharpness(current_image_name, x_window, y_window, False)
+##    sharpness = estimate_sharpness(current_image_name, x_window, y_window)[0]
 ##    data2[value+20] = sharpness
 ##    display_current('reference.jpg', current_image_name, x_window, y_window, data2)
 ##    print "sharpness ",sharpness," for adjustment", value
