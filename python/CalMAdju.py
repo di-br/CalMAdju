@@ -1,4 +1,5 @@
 #!/usr/bin/python
+"""This module helps calibrating your camera's AF system."""
 
 # have new print 'statements' (Python 3.0)
 from __future__ import print_function
@@ -18,7 +19,7 @@ import os
 # check if we find the gphoto2 cdl utility
 try:
     from sh import gphoto2 as gp
-except:
+except ImportError:
     print("\ngphoto2 not found\n")
     exit(1)
 
@@ -39,18 +40,28 @@ CAMERA_BANNER = """
 | * ensure constant and even lighting of target                    |           
 +------------------------------------------------------------------+           
                                                                                
-press a key when ready                                                         
 """
+
+GREETING = """
+this will try to calibrate your autofocus (AF) micro-adjustments (MADJ)
+(or at least help in finding a good value)
+
+please attach your camera, switch it on, and press a key
+"""
+
+# set up custom parameter strings for known cameras
+# NOTE: currently only a Canon EOS 7D is known
+# this MAY only work for one lens. using another lens with this command only repeatedly crashed the camera...
+CUSTOMFUNCEX = {}
+CUSTOMFUNCEX['Canon EOS 7D'] = 'c4,1,3,b8,d,502,1,0,504,1,0,503,1,0,505,1,'
+'0,507,5,2,2,VALUE,2,0,512,2,0,17,513,1,1,510,1,0,514,1,0,515,1,0,50e,1,0,516,1,'
+'1,60f,1,0,'
+
 
 def greeting():
     ''' Print hello world and 'version'. '''
-    print("\nthis will try to calibrate your autofocus (AF) micro-adjustments "
-          "(MADJ)")
-    print("(or at least help in finding a good value)")
-    print("version 0.0.1\n")
-
-    print("please attach your camera, switch it on, and press a key\n")
-    wait_key()
+    print(GREETING)
+    wait_key("")
 
     return
 
@@ -66,11 +77,9 @@ def check_version():
 
     for line in gp_version:
         if re.match(r"libgphoto2\s+", line, re.IGNORECASE):
-            # convert to line.split()[1]
-            version = re.split(r'\s+', line)[1]
-            version_major = re.split(r'\.', version)[0]
-            version_minor = re.split(r'\.', version)[1]
-            version_revision = re.split(r'\.', version)[2]
+            version = line.split()[1]
+            version_major, version_minor, version_revision = (
+                    version.split(".")[:3])
 
     print("found gphoto2 version " + version_major + "." +
           version_minor + "." + version_revision + "\n")
@@ -82,14 +91,6 @@ def check_version():
         exit(1)
 
     return
-
-# set up custom parameter strings for known cameras
-# NOTE: currently only a Canon EOS 7D is known
-# this MAY only work for one lens. using another lens with this command only repeatedly crashed the camera...
-customfuncex = {}
-customfuncex['Canon EOS 7D'] = 'c4,1,3,b8,d,502,1,0,504,1,0,503,1,0,505,1,'
-'0,507,5,2,2,VALUE,2,0,512,2,0,17,513,1,1,510,1,0,514,1,0,515,1,0,50e,1,0,516,1,'
-'1,60f,1,0,'
 
 
 def find_camera():
@@ -124,7 +125,7 @@ def find_camera():
             exit(1)
 
     # do we know the camera's custom function string?
-    if cameras[0] in customfuncex:
+    if cameras[0] in CUSTOMFUNCEX:
         print("we match settings for the custom functions ex call\n")
         auto_cam = True
     else:
@@ -135,28 +136,30 @@ def find_camera():
     return auto_cam, cameras
 
 
-def wait_key():
+def wait_key(print_msg="press a key when ready\n"):
     ''' Wait for a key press on the console. '''
     result = None
     return result
+    if print_msg:
+        print(print_msg)
     if os.name == 'nt':
         import msvcrt
         result = msvcrt.getch()
     else:
         import termios
-        fd = sys.stdin.fileno()
+        fileno = sys.stdin.fileno()
 
-        oldterm = termios.tcgetattr(fd)
-        newattr = termios.tcgetattr(fd)
+        oldterm = termios.tcgetattr(fileno)
+        newattr = termios.tcgetattr(fileno)
         newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
-        termios.tcsetattr(fd, termios.TCSANOW, newattr)
+        termios.tcsetattr(fileno, termios.TCSANOW, newattr)
 
         try:
             result = sys.stdin.read(1)
         except IOError:
             pass
         finally:
-            termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
+            termios.tcsetattr(fileno, termios.TCSAFLUSH, oldterm)
 
     return result
 
@@ -169,25 +172,25 @@ def prepare_camera():
     return
 
 
-def set_AFmicroadjustment(value, auto_cam, cameras):
+def set_af_microadjustment(value, auto_cam, cameras):
     ''' Change the AF microadjustment, either manually (by the user) or
     automagically (for certain cameras).
     '''
     if auto_cam:
         # change the adjustment value ourselves
-        pre = re.split('VALUE', customfuncex[cameras[0]])[0]
+        pre = re.split('VALUE', CUSTOMFUNCEX[cameras[0]])[0]
         if value >= 0:
             hexvalue = "%02x" % value
         else:
             hexvalue = "%02x" % (256 + value)
-        post = re.split('VALUE', customfuncex[cameras[0]])[1]
+        post = re.split('VALUE', CUSTOMFUNCEX[cameras[0]])[1]
 
         command = ["--set-config=customfuncex=" + pre + hexvalue + post]
         gp_madj = gp(command, _out='gp_output.log', _err='gp_error.log')
     else:
         print("please change the microadjustment level to {0} and press a "
         "key when ready".format(value))
-        wait_key()
+        wait_key("")
 
     return
 
@@ -295,7 +298,6 @@ def find_center(filename):
     plt.title('selected region')
     plt.draw()
 
-    print("press a key when ready\n")
     wait_key()
     plt.show()
     plt.close()
@@ -303,15 +305,14 @@ def find_center(filename):
     return x_window, y_window
 
 
-def display_default_and_current(default_filename, current_filename, x_window,
-                                y_window, data):
+def display_reference(filename, x_window, y_window):
     ''' Display two images side by side, also show the sharpness values we got
     so far.
     '''
     # read reference file
     try:
         # this will read the file in greyscale (argument 0)
-        img = cv2.imread('images/' + default_filename, 0)
+        img = cv2.imread('images/' + filename, 0)
     except:
         print("\nfailed reading the last image\n")
         exit(1)
@@ -325,15 +326,18 @@ def display_default_and_current(default_filename, current_filename, x_window,
 
     plt.subplot(2, 2, 1)
     plt.imshow(default_img, cmap = 'gray')
-    plt.title('original image'), plt.xticks([]), plt.yticks([])
+    plt.title('original image')
+    plt.xticks([])
+    plt.yticks([])
     plt.subplot(2, 2, 2)
     plt.imshow(current_img, cmap = 'gray')
-    plt.title('microadjusted image'), plt.xticks([]), plt.yticks([])
+    plt.title('microadjusted image')
+    plt.xticks([])
+    plt.yticks([])
     plt.draw()
 
 
-def display_current(default_filename, current_filename, x_window, y_window,
-                    data):
+def display_current(current_filename, x_window, y_window, data):
     ''' Display two images side by side, also show the sharpness values we got
     so far.
     '''
@@ -367,7 +371,9 @@ def display_current(default_filename, current_filename, x_window, y_window,
 
     plt.subplot(2, 2, 2)
     plt.imshow(current_img, cmap = 'gray')
-    plt.title('microadjusted image'), plt.xticks([]), plt.yticks([])
+    plt.title('microadjusted image')
+    plt.xticks([])
+    plt.yticks([])
     plt.subplot(2, 2, 4)
     plt.title('sharpness values')
     plt.ylabel('sharpness')
@@ -378,10 +384,12 @@ def display_current(default_filename, current_filename, x_window, y_window,
 
 
 def find_best_madj(data):
+    """Find best value by fitting a Gaussian."""
     from scipy.optimize import curve_fit
 
     def func(x, a, b, c):
-            return a * np.exp(-1/c * (x-b)**2)
+        """Fit function."""
+        return a * np.exp(-1/c * (x-b)**2)
 
     print("trying to fit the measured points w/ a Gaussian to determine best "
            "'region'\n")
@@ -419,86 +427,90 @@ def find_best_madj(data):
 
     return int(popt[1])
 
+
 ################################################
-greeting()
-check_version()
-## UNCOMMENT FOR NON-DRY-RUN
-#auto_cam, cameras = find_camera()
-## COMMENT FOR NON-DRY-RUN
-auto_cam=False
-## COMMENT FOR NON-DRY-RUN
-cameras = ["test"]
-
-prepare_camera()
-
-# take a reference image
-print("taking a reference image")
-## UNCOMMENT FOR NON-DRY-RUN
-#get_image('reference.jpg')
-
-# show reference image and get user to adjust relevant area
-x_window, y_window = find_center('reference.jpg')
-
-# have empty results array
-data = np.zeros(41)
-
-# now loop over a couple of values and evaluate image sharpness
-# start with 0 to have a default image first
-# NOTE: we allow for several 'runs' to revisit some values around the
-# approximate ideal point more often, this is a TODO atm
-run = 0
-plt.ion()
-display_default_and_current('reference.jpg', 'reference.jpg', x_window, y_window, data)
-
-# normalising variables
-found_norm = False
-norm = [1.0, 1.0]
-
-for value in [-20, -15, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 15, 20]:
-    set_AFmicroadjustment(value, auto_cam, cameras)
-    current_image_name = "AFtest_iter_{r}_adj_{v}.jpg".format(r=run, v=value)
+def main():
+    """Main function running the micro adjustment testing."""
+    greeting()
+    check_version()
     ## UNCOMMENT FOR NON-DRY-RUN
-    #get_image(current_image_name)
-    sharpness = estimate_sharpness(current_image_name, x_window, y_window)
-    if (not found_norm):
-        found_norm = True
-        norm = sharpness
-    sharpness = [sharpness[0] / norm[0], sharpness[2] / norm[2]]
-    # keep the result, assuming both parameters are ok, so average the
-    # normalised values
-    data[value + 20] = np.mean(sharpness)
-    # at a later stage, we should really fit both (or also the FFT one)
-    # independently and compare the results...
-    display_current('reference.jpg', current_image_name, x_window, y_window,
-                    data)
-    print("sharpness {0} for adjustment {1}".format(sharpness, value))
+    #auto_cam, cameras = find_camera()
+    ## COMMENT FOR NON-DRY-RUN
+    auto_cam=False
+    ## COMMENT FOR NON-DRY-RUN
+    cameras = ["test"]
 
-print("press a key when ready\n")
-wait_key()
+    prepare_camera()
 
-# fit and find max
-madj = find_best_madj(data)
+    # take a reference image
+    print("taking a reference image")
+    ## UNCOMMENT FOR NON-DRY-RUN
+    #get_image('reference.jpg')
 
-print("press a key when ready\n")
-wait_key()
+    # show reference image and get user to adjust relevant area
+    x_window, y_window = find_center('reference.jpg')
 
-##data2 = np.zeros(41)
-### iterate 7 points around max
-##run = 1
-##for value in range(madj-3,madj+4,1):
-##    set_AFmicroadjustment(value, auto_cam, cameras)
-##    current_image_name = "AFtest_iter_"+str(run)+"_adj_"+str(value)+".jpg"
-##    get_image(current_image_name)
-##    sharpness = estimate_sharpness(current_image_name, x_window, y_window)[0]
-##    data2[value+20] = sharpness
-##    display_current('reference.jpg', current_image_name, x_window, y_window, data2)
-##    print "sharpness ",sharpness," for adjustment", value
-##
-##wait_key()
-##
-### fit and find max
-##madj = find_best_madj(data2)
-##
-##wait_key()
-plt.show()
-plt.close()
+    # have empty results array
+    data = np.zeros(41)
+
+    # now loop over a couple of values and evaluate image sharpness
+    # start with 0 to have a default image first
+    # NOTE: we allow for several 'runs' to revisit some values around the
+    # approximate ideal point more often, this is a TODO atm
+    run = 0
+    plt.ion()
+    display_reference('reference.jpg', x_window, y_window)
+
+    # normalising variables
+    found_norm = False
+    norm = [1.0, 1.0]
+
+    for value in [-20, -15, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 15, 20]:
+        set_af_microadjustment(value, auto_cam, cameras)
+        current_image_name = "AFtest_iter_{r}_adj_{v}.jpg".format(r=run, v=value)
+        ## UNCOMMENT FOR NON-DRY-RUN
+        #get_image(current_image_name)
+        sharpness = estimate_sharpness(current_image_name, x_window, y_window)
+        if (not found_norm):
+            found_norm = True
+            norm = sharpness
+        sharpness = [sharpness[0] / norm[0], sharpness[2] / norm[2]]
+        # keep the result, assuming both parameters are ok, so average the
+        # normalised values
+        data[value + 20] = np.mean(sharpness)
+        # at a later stage, we should really fit both (or also the FFT one)
+        # independently and compare the results...
+        display_current(current_image_name, x_window, y_window, data)
+        print("sharpness {0} for adjustment {1}".format(sharpness, value))
+
+    wait_key()
+
+    # fit and find max
+    madj = find_best_madj(data)
+
+    wait_key()
+
+    ##data2 = np.zeros(41)
+    ### iterate 7 points around max
+    ##run = 1
+    ##for value in range(madj-3,madj+4,1):
+    ##    set_af_microadjustment(value, auto_cam, cameras)
+    ##    current_image_name = "AFtest_iter_"+str(run)+"_adj_"+str(value)+".jpg"
+    ##    get_image(current_image_name)
+    ##    sharpness = estimate_sharpness(current_image_name, x_window, y_window)[0]
+    ##    data2[value+20] = sharpness
+    ##    display_current('reference.jpg', current_image_name, x_window, y_window, data2)
+    ##    print "sharpness ",sharpness," for adjustment", value
+    ##
+    ##wait_key()
+    ##
+    ### fit and find max
+    ##madj = find_best_madj(data2)
+    ##
+    ##wait_key()
+    plt.show()
+    plt.close()
+
+
+if __name__ == "__main__":
+    main()
