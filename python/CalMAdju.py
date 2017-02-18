@@ -26,6 +26,8 @@ except ImportError:
 # turn off toolbar for matplotlib windows
 mpl.rcParams['toolbar'] = 'None'
 
+BASE_DIR = "images"
+
 CAMERA_BANNER = """                                                            
 +------------------------------------------------------------------+           
 | NOW YOU NEED TO SET UP YOUR CAMERA                               |           
@@ -81,8 +83,8 @@ def check_version():
             version_major, version_minor, version_revision = (
                     version.split(".")[:3])
 
-    print("found gphoto2 version " + version_major + "." +
-          version_minor + "." + version_revision + "\n")
+    print("found gphoto2 version {0}.{1}.{2}".format(
+          version_major, version_minor, version_revision))
 
     # we know v2.5.11 to work, so check for it
     from pkg_resources import parse_version
@@ -109,7 +111,7 @@ def find_camera():
         # why is there a 'Loading sth usb something' message...?
         if not re.match(r"(Loadin|Model|(-)+)", line, re.IGNORECASE):
             n_cameras = n_cameras + 1
-            cameras.append(re.split(r'(\s\s)+', line)[0])
+            cameras.append(line.split()[0])
 
     # do we _have_ a camera?
     if n_cameras < 1:
@@ -119,7 +121,7 @@ def find_camera():
     if n_cameras >= 1:
         print("camera(s) found:")
         for cam in cameras:
-            print("\t" + cam)
+            print("\t{0}".format(cam))
         if n_cameras > 1:
             print("\nplease attach only one camera!\n")
             exit(1)
@@ -197,7 +199,8 @@ def set_af_microadjustment(value, auto_cam, cameras):
 
 def get_image(filename):
     ''' Capture an image and download said image. '''
-    command = ["--filename=images/" + filename, "--force-overwrite",
+    filename = os.path.join(BASE_DIR, filename)
+    command = ["--filename={0}".format(filename), "--force-overwrite",
                "--capture-image-and-download"]
     try:
         gp_capture = gp(command, _out='gp_output.log', _err='gp_error.log')
@@ -215,7 +218,8 @@ def estimate_sharpness(filename, x_window, y_window):
     # read file
     try:
         # this will read the file in greyscale (argument 0)
-        img = cv2.imread('images/' + filename, 0)
+        filename = os.path.join(BASE_DIR, filename)
+        img = cv2.imread(filename, 0)
     except:
         print("\nfailed reading the last image\n")
         exit(1)
@@ -267,7 +271,8 @@ def find_center(filename):
     # read file
     try:
         # this will read the file in greyscale (argument 0)
-        img = cv2.imread('images/' + filename, 0)
+        filename = os.path.join(BASE_DIR, filename)
+        img = cv2.imread(filename, 0)
         # now, instead of the above we could load the image w/
         # matplotlib and convert the resulting RGB data into
         # grayscale, thus reducing dependencies
@@ -312,7 +317,8 @@ def display_reference(filename, x_window, y_window):
     # read reference file
     try:
         # this will read the file in greyscale (argument 0)
-        img = cv2.imread('images/' + filename, 0)
+        filename = os.path.join(BASE_DIR, filename)
+        img = cv2.imread(filename, 0)
     except:
         print("\nfailed reading the last image\n")
         exit(1)
@@ -344,7 +350,8 @@ def display_current(current_filename, x_window, y_window, data):
     # read 'adjusted' file
     try:
         # this will read the file in greyscale (argument 0)
-        img = cv2.imread('images/' + current_filename, 0)
+        filename = os.path.join(BASE_DIR, current_filename)
+        img = cv2.imread(filename, 0)
     except:
         print("\nfailed reading the last image\n")
         exit(1)
