@@ -180,14 +180,14 @@ def set_af_microadjustment(value, auto_cam, cameras):
     '''
     if auto_cam:
         # change the adjustment value ourselves
-        pre = re.split('VALUE', CUSTOMFUNCEX[cameras[0]])[0]
+        pre, post = CUSTOMFUNCEX[cameras[0]].split('VALUE')[:2]
         if value >= 0:
             hexvalue = "%02x" % value
         else:
             hexvalue = "%02x" % (256 + value)
-        post = re.split('VALUE', CUSTOMFUNCEX[cameras[0]])[1]
 
-        command = ["--set-config=customfuncex=" + pre + hexvalue + post]
+        command = ["--set-config=customfuncex={0}{1}{2}".format(pre, hexvalue,
+                                                                post)]
         gp_madj = gp(command, _out='gp_output.log', _err='gp_error.log')
     else:
         print("please change the microadjustment level to {0} and press a "
