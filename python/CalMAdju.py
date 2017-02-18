@@ -286,14 +286,13 @@ def find_center(filename):
     # read file
     img = safe_load_image(filename)
 
-    # get image dimensions and center point
-    height, width = img.shape[:2]
-    x_center = width / 2
-    y_center = height / 2
-
     # start with some extent
     x_window = 900
     y_window = 600
+
+    # TODO: add a loop to query the user for input on the interesting area
+    # we have a fixed window bang in the middle right now...
+    cropped_image = crop_image(img, x_window, y_window)
 
     # display
     plt.ion()
@@ -303,8 +302,7 @@ def find_center(filename):
     plt.title('original image')
     # show 'relevant' region
     plt.subplot(1, 2, 2)
-    plt.imshow(img[y_center - y_window:y_center + y_window,
-                   x_center - x_window:x_center + x_window], cmap = 'gray')
+    plt.imshow(cropped_image, cmap = 'gray')
     plt.title('selected region')
     plt.draw()
 
