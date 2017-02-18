@@ -27,6 +27,9 @@ var/
 *.manifest
 *.spec
 
+# Jupyter stuff
+.ipynb_checkpoints
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

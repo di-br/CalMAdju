@@ -35,9 +35,9 @@ Resources I came across involved (nothing an internet search doesn't find):
   ```
   Line 1 uses numpy for computing the gradients in `x` and `y` that line 2 will combine to an average per pixel which in turn will be averaged over the `reduced_img`.
 
-Yes, the last (two) lines in either case are actually doing the same thing, I noticed (infact, there are yet other ways of writing this). I also noticed another small mishap in the code while typing the above, so it's all a process...
-
   A test whether or how this works can be found within the [metric_tests](https://github.com/di-br/CalMAdju/blob/master/doc/metric_tests/Gradients/Gradients.md)
+
+Yes, the last (two) lines in either case are actually doing the same thing, I noticed (infact, there are yet other ways of writing this). I also noticed another small mishap in the code while typing the above, so it's all a process...
 
 * 'FFT method'
 

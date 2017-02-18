@@ -104,6 +104,7 @@ import sys, os
 def wait_key():
     ''' Wait for a key press on the console. '''
     result = None
+    return result
     if os.name == 'nt':
         import msvcrt
         result = msvcrt.getch()
@@ -194,16 +195,37 @@ def estimate_sharpness(filename, x_window, y_window):
 
     reduced_img = img[y_center-y_window:y_center+y_window,x_center-x_window:x_center+x_window]
 
-    # compute a variance measure that should provide a contrasty result
-    avg_img = reduced_img.sum()/np.size(reduced_img)
-    var = (reduced_img-avg_img)**2
-    score1 = np.mean(var)
-    # compute gradients in x and y
+    # compute a variance measure that should prefer a contrasty result, thus a sharper one
+    score1 = np.mean(np.var(reduced_img))
+
+    # compute gradients in x and y that should prefer more edges, so a sharper image
     gy, gx = np.gradient(reduced_img,2)
     gnorm = np.sqrt(gx**2 + gy**2)
+    # normalise to max value, in the hope of compensating lighting variations?
+    gnorm = gnorm/np.max(gnorm)
     score2 = np.mean(gnorm)
 
-    return [score1, score2]
+    score3 = 0.
+    fraction = 0.3
+    # compute fft measure
+    fft = np.fft.fft2(reduced_img)      # it may be better to compute FFT on larger section
+                                        # (to get more frequencies...)
+    # look at real part, normalise, and shift zeroth component to center
+    fft_usable = np.abs(np.real(np.fft.fftshift(fft)))
+    fft_usable /= np.max(fft_usable)
+
+    # find center of frequencies and the extent
+    center_x = np.shape(fft)[0]/2
+    center_y = np.shape(fft)[1]/2
+    region_x_min = np.int(center_x - fraction*center_x)
+    region_x_max = np.int(center_x + fraction*center_x)
+    region_y_min = np.int(center_y - fraction*center_y)
+    region_y_max = np.int(center_y + fraction*center_y)
+    # loop from center outwards, a fraction of frequencies
+    for value in np.nditer(fft_usable[region_x_min:region_x_max, region_y_min:region_y_max]):
+        score3 += np.sqrt(value)
+
+    return [score1, score2, score3]
 
 def find_center(filename):
     ''' Display image w/ matplotlib and have the user restrict the interesting area. '''
@@ -394,7 +416,7 @@ for value in [-20, -15, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 15, 20]
     if (not found_norm):
         found_norm = True
         norm = sharpness
-    sharpness = [sharpness[0]/norm[0], sharpness[1]/norm[1]]
+    sharpness = [sharpness[0]/norm[0], sharpness[2]/norm[2]]
     # keep the result, assuming both parameters are ok, so average the normalised values
     data[value+20] = np.mean(sharpness)
     # at a later stage, we should really fit both (or also the FFT one) independently and compare the results...
