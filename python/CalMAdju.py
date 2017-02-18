@@ -227,20 +227,25 @@ def safe_load_image(filename):
     return img
 
 
-def estimate_sharpness(filename, x_window, y_window):
-    ''' Estimate sharpness of the image by looking at a contrast value
-    and image gradients.
-    '''
-    # read file
-    img = safe_load_image(filename)
-
-    # get image dimensions and center point
+def crop_image(img, x_window, y_window):
+    """Crop image to the given size."""
     height, width = img.shape[:2]
     x_center = width / 2
     y_center = height / 2
 
     reduced_img = img[y_center - y_window:y_center + y_window,
                       x_center - x_window:x_center + x_window]
+    return reduced_img
+
+
+def estimate_sharpness(filename, x_window, y_window):
+    ''' Estimate sharpness of the image by looking at a contrast value
+    and image gradients.
+    '''
+    # read file
+    img = safe_load_image(filename)
+    reduced_img = crop_image(img, x_window, y_window)
+
     # compute a variance measure that should prefer a contrasty result, thus a sharper one
     score1 = np.mean(np.var(reduced_img))
 
@@ -316,12 +321,8 @@ def display_reference(filename, x_window, y_window):
     '''
     # read reference file
     img = safe_load_image(filename)
+    default_img = crop_image(img, x_window, y_window)
 
-    height, width = img.shape[:2]
-    x_center = width / 2
-    y_center = height / 2
-    default_img = img[y_center - y_window:y_center + y_window,
-                      x_center - x_window:x_center + x_window]
     # clear 'adjusted' file
     current_img = 0. * default_img
 
@@ -344,12 +345,7 @@ def display_current(current_filename, x_window, y_window, data):
     '''
     # read 'adjusted' file
     img = safe_load_image(current_filename)
-
-    height, width = img.shape[:2]
-    x_center = width / 2
-    y_center = height / 2
-    current_img = img[y_center - y_window:y_center + y_window,
-                      x_center - x_window:x_center + x_window]
+    current_img = crop_image(img, x_window, y_window)
 
     # extract sharpness data
     x_data = np.array(range(-20, 21, 1))
