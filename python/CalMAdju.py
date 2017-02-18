@@ -211,18 +211,28 @@ def get_image(filename):
     return
 
 
+def safe_load_image(filename):
+    """Try loading the given file."""
+    try:
+        # this will read the file in greyscale (argument 0)
+        filename = os.path.join(BASE_DIR, filename)
+        img = cv2.imread(filename, 0)
+        # now, instead of the above we could load the image w/
+        # matplotlib and convert the resulting RGB data into
+        # grayscale, thus reducing dependencies
+        # https://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python
+    except:
+        print("\nfailed reading the last image\n")
+        exit(1)
+    return img
+
+
 def estimate_sharpness(filename, x_window, y_window):
     ''' Estimate sharpness of the image by looking at a contrast value
     and image gradients.
     '''
     # read file
-    try:
-        # this will read the file in greyscale (argument 0)
-        filename = os.path.join(BASE_DIR, filename)
-        img = cv2.imread(filename, 0)
-    except:
-        print("\nfailed reading the last image\n")
-        exit(1)
+    img = safe_load_image(filename)
 
     # get image dimensions and center point
     height, width = img.shape[:2]
@@ -269,17 +279,7 @@ def find_center(filename):
     area.
     '''
     # read file
-    try:
-        # this will read the file in greyscale (argument 0)
-        filename = os.path.join(BASE_DIR, filename)
-        img = cv2.imread(filename, 0)
-        # now, instead of the above we could load the image w/
-        # matplotlib and convert the resulting RGB data into
-        # grayscale, thus reducing dependencies
-        # https://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python
-    except:
-        print("\nfailed reading the last image\n")
-        exit(1)
+    img = safe_load_image(filename)
 
     # get image dimensions and center point
     height, width = img.shape[:2]
@@ -315,13 +315,8 @@ def display_reference(filename, x_window, y_window):
     so far.
     '''
     # read reference file
-    try:
-        # this will read the file in greyscale (argument 0)
-        filename = os.path.join(BASE_DIR, filename)
-        img = cv2.imread(filename, 0)
-    except:
-        print("\nfailed reading the last image\n")
-        exit(1)
+    img = safe_load_image(filename)
+
     height, width = img.shape[:2]
     x_center = width / 2
     y_center = height / 2
@@ -348,13 +343,8 @@ def display_current(current_filename, x_window, y_window, data):
     so far.
     '''
     # read 'adjusted' file
-    try:
-        # this will read the file in greyscale (argument 0)
-        filename = os.path.join(BASE_DIR, current_filename)
-        img = cv2.imread(filename, 0)
-    except:
-        print("\nfailed reading the last image\n")
-        exit(1)
+    img = safe_load_image(current_filename)
+
     height, width = img.shape[:2]
     x_center = width / 2
     y_center = height / 2
@@ -452,10 +442,11 @@ def main():
     # take a reference image
     print("taking a reference image")
     ## UNCOMMENT FOR NON-DRY-RUN
-    #get_image('reference.jpg')
+    reference_image = 'reference.jpg'
+    #get_image(reference_image)
 
     # show reference image and get user to adjust relevant area
-    x_window, y_window = find_center('reference.jpg')
+    x_window, y_window = find_center(reference_image)
 
     # have empty results array
     data = np.zeros(41)
@@ -466,7 +457,7 @@ def main():
     # approximate ideal point more often, this is a TODO atm
     run = 0
     plt.ion()
-    display_reference('reference.jpg', x_window, y_window)
+    display_reference(reference_image, x_window, y_window)
 
     # normalising variables
     found_norm = False
