@@ -23,6 +23,8 @@ Resources I came across involved (nothing an internet search doesn't find):
   ```
   Here, `reduced_img` is a selected smaller region including parts of the target. Also, all images are processed in greyscale. The first line computes the average grey value, the second line estimates the variance of the pixels, the last line normalises to a score value.
 
+  A test whether or how this works can be found within the [metric_tests](https://github.com/di-br/CalMAdju/blob/master/doc/metric_tests/Variance/Variance.md)
+
 * 'Gradient method'
 
   Computing gradients in x- and y-direction
@@ -35,8 +37,19 @@ Resources I came across involved (nothing an internet search doesn't find):
 
 Yes, the last (two) lines in either case are actually doing the same thing, I noticed (infact, there are yet other ways of writing this). I also noticed another small mishap in the code while typing the above, so it's all a process...
 
+  A test whether or how this works can be found within the [metric_tests](https://github.com/di-br/CalMAdju/blob/master/doc/metric_tests/Gradients/Gradients.md)
 
-## Todo
 * 'FFT method'
 
-  FFTing the images, looking for frequency components.
+  FFTing the images, looking for frequency components within a certain range and comparing those to zeroth order. Comparing for now means summing them up, assuming more contributions will lead a sharper picture. Various normalising steps included.
+  ```Python
+  fft = np.fft.fft2(reduced_img)
+  fft_usable = np.abs(np.real(np.fft.fftshift(fft)))
+  fft_usable /= np.max(fft_usable)
+  # ...
+  score = 0
+  for value in np.nditer(fft_usable[region_x_min:region_x_max, region_y_min:region_y_max]):
+        score += np.sqrt(value)
+  ```
+
+  A test whether or how this works can be found within the [metric_tests](https://github.com/di-br/CalMAdju/blob/master/doc/metric_tests/FFT/FFT.md)
