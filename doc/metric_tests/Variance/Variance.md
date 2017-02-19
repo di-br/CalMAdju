@@ -96,11 +96,10 @@ soft_test_noise = soft_image[1005:1405,2012:2412].copy()
 def noise(data, noise_value):
     noisy_data = data + noise_value * np.random.random([400,400,3]) - noise_value/2
     # shift values to be within bounds
-    for value in np.nditer(noisy_data, op_flags=['readwrite']):
-        if (value < 0):
-            value[...] = np.abs(value)
-        if (value > 1):
-            value[...] = -value + 2
+    tmp_data = noisy_data.copy()
+    noisy_data[tmp_data < 0] = np.abs(tmp_data[tmp_data < 0])
+    noisy_data[tmp_data > 1] = -tmp_data[tmp_data > 1] + 2
+    
     return noisy_data
 ```
 
@@ -163,8 +162,8 @@ print '    metric (sharp) :', variance_sharpness_metric(sharp_test_noise)
 print '    metric  (soft) :', variance_sharpness_metric(soft_test_noise)
 ```
 
-        metric (sharp) : (0.1405385421623605, 0.1382244902874242)
-        metric  (soft) : (0.10286790964636182, 0.10097473866460273)
+        metric (sharp) : (0.1405288428661248, 0.13820895315943324)
+        metric  (soft) : (0.10275977873984476, 0.10075797998338254)
 
 
 ### Check robustness of metric, looking at the ratio of things
@@ -176,7 +175,7 @@ print '    ratio/cleanliness of results:', \
 variance_sharpness_metric(sharp_test_noise)[0]/variance_sharpness_metric(soft_test_noise)[0]
 ```
 
-        ratio/cleanliness of results: 1.3662039274
+        ratio/cleanliness of results: 1.36754715307
 
 
 

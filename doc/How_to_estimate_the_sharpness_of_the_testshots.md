@@ -4,7 +4,7 @@ By this I mean some metric that can tell whether or not the pictures taken actua
 
 Of course considerable science already went into this and there are many methods. No need to reinvent the wheel. A quick internet search revealed several ways of doing this, some easier than others. What comes to mind is: looking at the contrast of the images (more contrast will mean sharper), finding edges (a blurry picture won't have (m)any), or being fancy applying an FFT and comparing the factors to the high frequency components.
 
-Do your own search and see what you like. I've probably missed **the** standard method, I surely have ignored what other packages do, and I probably exploit all the power Python can deliver. I'm fiddling and having fun, reinventing the wheel nevertheless.
+Do your own search and see what you like. I've probably missed **the** standard method, I surely have ignored what other packages do, and I probably nowhere near exploit all the power Python can deliver. I'm fiddling and having fun, reinventing the wheel nevertheless.
 
 Resources I came across involved (nothing an internet search doesn't find):
 

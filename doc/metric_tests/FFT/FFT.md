@@ -96,11 +96,10 @@ soft_test_noise = soft_image[1005:1405,2012:2412].copy()
 def noise(data, noise_value):
     noisy_data = data + noise_value * np.random.random([400,400,3]) - noise_value/2
     # shift values to be within bounds
-    for value in np.nditer(noisy_data, op_flags=['readwrite']):
-        if (value < 0):
-            value[...] = np.abs(value)
-        if (value > 1):
-            value[...] = -value + 2
+    tmp_data = noisy_data.copy()
+    noisy_data[tmp_data < 0] = np.abs(tmp_data[tmp_data < 0])
+    noisy_data[tmp_data > 1] = -tmp_data[tmp_data > 1] + 2
+    
     return noisy_data
 ```
 
@@ -195,9 +194,9 @@ def fft_sharpness_metric(fft, fraction):
     region_x_max = np.int(center_x + fraction*center_x)
     region_y_min = np.int(center_y - fraction*center_y)
     region_y_max = np.int(center_y + fraction*center_y)
-    # loop from center outwards, a fraction of frequencies
-    for value in np.nditer(fft_usable[region_x_min:region_x_max, region_y_min:region_y_max]):
-        metric += np.sqrt(value)
+    # cover area from center outwards, i.e. a fraction of frequencies
+    metric = np.sqrt(fft_usable[region_x_min:region_x_max, region_y_min:region_y_max]).sum()
+    
     return metric
 ```
 
@@ -265,20 +264,20 @@ for frac in [0.1, 0.2, 0.4, 0.6, 0.8]:
 
     Testing different cut-offs for the frequencies taken into account
     fraction of frequencies: 0.1
-        metric (sharp) : 74.6986621297
-        metric  (soft) : 67.1524587298
+        metric (sharp) : 74.4929783356
+        metric  (soft) : 67.3363980271
     fraction of frequencies: 0.2
-        metric (sharp) : 203.726694378
-        metric  (soft) : 140.847554117
+        metric (sharp) : 203.060502239
+        metric  (soft) : 140.719223757
     fraction of frequencies: 0.4
-        metric (sharp) : 584.532145565
-        metric  (soft) : 323.195665509
+        metric (sharp) : 583.287190081
+        metric  (soft) : 321.801761276
     fraction of frequencies: 0.6
-        metric (sharp) : 946.028424255
-        metric  (soft) : 606.860205559
+        metric (sharp) : 947.827115547
+        metric  (soft) : 605.610620877
     fraction of frequencies: 0.8
-        metric (sharp) : 1385.39152227
-        metric  (soft) : 998.146553229
+        metric (sharp) : 1390.26774813
+        metric  (soft) : 993.419858344
 
 
 ### Sharpness metric for all images
@@ -294,20 +293,20 @@ for frac in [0.1, 0.2, 0.4, 0.6, 0.8]:
 
     Testing different cut-offs for the frequencies taken into account
     fraction of frequencies: 0.1
-        metric (sharp exact/noisy) : 75.3405700802 74.6986621297
-        metric  (soft exact/noisy) : 66.9675107324 67.1524587298
+        metric (sharp exact/noisy) : 75.3405700802 74.4929783356
+        metric  (soft exact/noisy) : 66.9675107324 67.3363980271
     fraction of frequencies: 0.2
-        metric (sharp exact/noisy) : 204.898502798 203.726694378
-        metric  (soft exact/noisy) : 133.145029462 140.847554117
+        metric (sharp exact/noisy) : 204.898502798 203.060502239
+        metric  (soft exact/noisy) : 133.145029462 140.719223757
     fraction of frequencies: 0.4
-        metric (sharp exact/noisy) : 581.212115514 584.532145565
-        metric  (soft exact/noisy) : 225.358825803 323.195665509
+        metric (sharp exact/noisy) : 581.212115514 583.287190081
+        metric  (soft exact/noisy) : 225.358825803 321.801761276
     fraction of frequencies: 0.6
-        metric (sharp exact/noisy) : 904.759958165 946.028424255
-        metric  (soft exact/noisy) : 314.150948575 606.860205559
+        metric (sharp exact/noisy) : 904.759958165 947.827115547
+        metric  (soft exact/noisy) : 314.150948575 605.610620877
     fraction of frequencies: 0.8
-        metric (sharp exact/noisy) : 1265.80745082 1385.39152227
-        metric  (soft exact/noisy) : 406.363714917 998.146553229
+        metric (sharp exact/noisy) : 1265.80745082 1390.26774813
+        metric  (soft exact/noisy) : 406.363714917 993.419858344
 
 
 ### Check robustness of metric, looking at the ratio of things
@@ -320,11 +319,11 @@ for frac in [0.1, 0.2, 0.4, 0.6, 0.8]:
     1/(fft_sharpness_metric(sharp_test_noise, frac)/fft_sharpness_metric(soft_test_noise, frac))
 ```
 
-        ratio/cleanliness of results: 1.08869358732
-        ratio/cleanliness of results: 1.13689412894
-        ratio/cleanliness of results: 1.10292116691
-        ratio/cleanliness of results: 1.06923186681
-        ratio/cleanliness of results: 1.04216985267
+        ratio/cleanliness of results: 1.08926777778
+        ratio/cleanliness of results: 1.13630443572
+        ratio/cleanliness of results: 1.10267622907
+        ratio/cleanliness of results: 1.06892310003
+        ratio/cleanliness of results: 1.04209771609
 
 
 
