@@ -3,37 +3,27 @@
 
 # have new print 'statements' (Python 3.0)
 from __future__ import print_function
-# import sys and os to wait for keys pressed
-import sys
-import os
 
 # Base directory for images taken/assessed
 base_dir = ''
+# Wait for user or don't
+batch = False
 
 
-def wait_key(print_msg="press a key when ready\n"):
-    ''' Wait for a key press on the console. '''
+def wait_key(print_msg="Press return to continue\n", override=False):
+    '''Wait for a key press on the console.
+
+    If batch is set to True, we return and do not wait for a key press.
+    Set override to True if you want to insist on a key pressed no matter what.
+    '''
     result = None
-    return result
+
+    if batch and not override:
+        return result
+
     if print_msg:
         print(print_msg)
-    if os.name == 'nt':
-        import msvcrt
-        result = msvcrt.getch()
-    else:
-        import termios
-        fileno = sys.stdin.fileno()
 
-        oldterm = termios.tcgetattr(fileno)
-        newattr = termios.tcgetattr(fileno)
-        newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
-        termios.tcsetattr(fileno, termios.TCSANOW, newattr)
-
-        try:
-            result = sys.stdin.read(1)
-        except IOError:
-            pass
-        finally:
-            termios.tcsetattr(fileno, termios.TCSAFLUSH, oldterm)
+    raw_input()
 
     return result

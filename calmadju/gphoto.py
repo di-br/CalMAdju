@@ -18,6 +18,7 @@ except ImportError:
     exit(1)
 
 # Set initial values for detected camera
+dry = False
 auto_cam = False
 cameras = []
 
@@ -30,24 +31,27 @@ CUSTOMFUNCEX['Canon EOS 7D'] = \
 '2,0,512,2,0,17,513,1,1,510,1,0,514,1,0,515,1,0,50e,1,0,516,1,1,60f,1,0,'
 
 CAMERA_BANNER = """
-+------------------------------------------------------------------+           
-| NOW YOU NEED TO SET UP YOUR CAMERA                               |           
-|                                                                  |           
-| * put camera on a tripod with suitable distance to target        |           
-| * align focal plane parallel to target, central to target        |           
-| * make sure the shutter/release button does autofocus and meter  |           
-| * reduce ISO value to a minimum to reduce noise                  |           
-| * set image format to JPG to download suitable files             |           
-| * reduce DOF to a minimum, i.e. open aperture as far as possible |           
-|   to have biggest impact of front/back focussing                 |           
-| * ensure constant and even lighting of target                    |           
-+------------------------------------------------------------------+           
-                                                                               
++------------------------------------------------------------------+
+| NOW YOU NEED TO SET UP YOUR CAMERA                               |
+|                                                                  |
+| * put camera on a tripod with suitable distance to target        |
+| * align focal plane parallel to target, central to target        |
+| * make sure the shutter/release button does autofocus and meter  |
+| * reduce ISO value to a minimum to reduce noise                  |
+| * set image format to JPG to download suitable files             |
+| * reduce DOF to a minimum, i.e. open aperture as far as possible |
+|   to have biggest impact of front/back focussing                 |
+| * ensure constant and even lighting of target                    |
++------------------------------------------------------------------+
+
 """
 
 
 def check_version():
     ''' Check if we have a sufficient libgphoto2 version. '''
+    if dry:
+        return
+
     # Enquire gphoto2 version
     try:
         gp_version = gp("--version", _err='gp_error.log')
@@ -77,6 +81,12 @@ def find_camera():
     ''' Identify the attached camera and switch between manual and
     automatic microadjustment.
     '''
+    if dry:
+        return
+
+    print('Please attach your camera, switch it on, and press return.')
+    utils.wait_key('')
+
     try:
         gp_detect = gp("--auto-detect", _err='gp_error.log')
     except:
@@ -117,6 +127,9 @@ def find_camera():
 
 def prepare_camera():
     ''' Advise the user on how to set up the camera. '''
+    if dry:
+        return
+
     print(CAMERA_BANNER)
     utils.wait_key()
 
@@ -127,6 +140,9 @@ def set_af_microadjustment(value):
     ''' Change the AF microadjustment, either manually (by the user) or
     automagically (for certain cameras).
     '''
+    if dry:
+        return
+
     if auto_cam:
         # Change the adjustment value ourselves
         pre, post = CUSTOMFUNCEX[cameras[0]].split('VALUE')[:2]
@@ -139,8 +155,8 @@ def set_af_microadjustment(value):
                                                                 post)]
         gp_madj = gp(command, _out='gp_output.log', _err='gp_error.log')
     else:
-        print("Please change the microadjustment level to {0} and press a "
-              "key when ready".format(value))
+        print("Please change the microadjustment level to {0} and press "
+              "return when ready".format(value))
         utils.wait_key("")
 
     return
@@ -148,6 +164,9 @@ def set_af_microadjustment(value):
 
 def get_image(filename):
     ''' Capture an image and download said image. '''
+    if dry:
+        return
+
     filename = os.path.join(utils.base_dir, filename)
     command = ["--filename={0}".format(filename), "--force-overwrite",
                "--capture-image-and-download"]

@@ -23,15 +23,12 @@ GREETING = """
 This will try to calibrate your autofocus (AF) micro-adjustments (MADJ)
 (or at least help in finding a good value).
 
-Please attach your camera, switch it on, and press a key.
 """
 
 
 def greeting():
     ''' Print hello world and 'version'. '''
     print(GREETING)
-    utils.wait_key("")
-
     return
 
 
@@ -46,7 +43,7 @@ def safe_load_image(filename):
         # grayscale, thus reducing dependencies
         # https://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python
     except:
-        print("\nfailed reading the last image\n")
+        print("\nFailed reading the last image.\nExiting\n")
         exit(1)
     return img
 
@@ -251,16 +248,14 @@ def main():
     """Main function running the micro adjustment testing."""
     greeting()
     gphoto.check_version()
-    ## UNCOMMENT FOR NON-DRY-RUN
-    #gphoto.find_camera()
+    gphoto.find_camera()
 
     gphoto.prepare_camera()
 
     # Take a reference image
-    print("taking a reference image")
-    ## UNCOMMENT FOR NON-DRY-RUN
+    print("Taking a reference image")
     reference_image = 'reference.jpg'
-    #gphoto.get_image(reference_image)
+    gphoto.get_image(reference_image)
 
     # Show reference image and get user to adjust relevant area
     x_window, y_window = find_center(reference_image)
@@ -283,8 +278,7 @@ def main():
     for value in [-20, -15, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 15, 20]:
         gphoto.set_af_microadjustment(value)
         current_image_name = "AFtest_iter_{r}_adj_{v}.jpg".format(r=run, v=value)
-        ## UNCOMMENT FOR NON-DRY-RUN
-        #gphoto.get_image(current_image_name)
+        gphoto.get_image(current_image_name)
         sharpness = estimate_sharpness(current_image_name, x_window, y_window)
         if not found_norm:
             found_norm = True
@@ -302,9 +296,8 @@ def main():
 
     # Fit and find max
     madj = find_best_madj(data)
-    raw_input()
 
-    utils.wait_key()
+    utils.wait_key(override=True)
 
     ##data2 = np.zeros(41)
     ### iterate 7 points around max
