@@ -13,9 +13,8 @@ import cv2
 # import os to wait for keys pressed
 import os
 
-from calmadju.utils import wait_key, BASE_DIR
-from calmadju.gphoto import check_version, find_camera, prepare_camera, \
-        get_image, set_af_microadjustment
+import utils
+import gphoto
 
 # Turn off toolbar for matplotlib windows
 mpl.rcParams['toolbar'] = 'None'
@@ -31,7 +30,7 @@ Please attach your camera, switch it on, and press a key.
 def greeting():
     ''' Print hello world and 'version'. '''
     print(GREETING)
-    wait_key("")
+    utils.wait_key("")
 
     return
 
@@ -40,7 +39,7 @@ def safe_load_image(filename):
     """Try loading the given file."""
     try:
         # This will read the file in greyscale (argument 0)
-        filename = os.path.join(BASE_DIR, filename)
+        filename = os.path.join(utils.base_dir, filename)
         img = cv2.imread(filename, 0)
         # Now, instead of the above we could load the image w/
         # matplotlib and convert the resulting RGB data into
@@ -134,7 +133,7 @@ def find_center(filename):
     plt.title('selected region')
     plt.draw()
 
-    wait_key()
+    utils.wait_key()
     plt.show()
     plt.close()
 
@@ -251,17 +250,17 @@ def find_best_madj(data):
 def main():
     """Main function running the micro adjustment testing."""
     greeting()
-    check_version()
+    gphoto.check_version()
     ## UNCOMMENT FOR NON-DRY-RUN
-    #find_camera()
+    #gphoto.find_camera()
 
-    prepare_camera()
+    gphoto.prepare_camera()
 
     # Take a reference image
     print("taking a reference image")
     ## UNCOMMENT FOR NON-DRY-RUN
     reference_image = 'reference.jpg'
-    #get_image(reference_image)
+    #gphoto.get_image(reference_image)
 
     # Show reference image and get user to adjust relevant area
     x_window, y_window = find_center(reference_image)
@@ -282,10 +281,10 @@ def main():
     norm = [1.0, 1.0]
 
     for value in [-20, -15, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 15, 20]:
-        set_af_microadjustment(value)
+        gphoto.set_af_microadjustment(value)
         current_image_name = "AFtest_iter_{r}_adj_{v}.jpg".format(r=run, v=value)
         ## UNCOMMENT FOR NON-DRY-RUN
-        #get_image(current_image_name)
+        #gphoto.get_image(current_image_name)
         sharpness = estimate_sharpness(current_image_name, x_window, y_window)
         if not found_norm:
             found_norm = True
@@ -299,32 +298,32 @@ def main():
         display_current(current_image_name, x_window, y_window, data)
         print("Sharpness {0} for adjustment {1}".format(sharpness, value))
 
-    wait_key()
+    utils.wait_key()
 
     # Fit and find max
     madj = find_best_madj(data)
     raw_input()
 
-    wait_key()
+    utils.wait_key()
 
     ##data2 = np.zeros(41)
     ### iterate 7 points around max
     ##run = 1
     ##for value in range(madj-3,madj+4,1):
-    ##    set_af_microadjustment(value)
+    ##    gphoto.set_af_microadjustment(value)
     ##    current_image_name = "AFtest_iter_"+str(run)+"_adj_"+str(value)+".jpg"
-    ##    get_image(current_image_name)
+    ##    gphoto.get_image(current_image_name)
     ##    sharpness = estimate_sharpness(current_image_name, x_window, y_window)[0]
     ##    data2[value+20] = sharpness
     ##    display_current('reference.jpg', current_image_name, x_window, y_window, data2)
     ##    print "sharpness ",sharpness," for adjustment", value
     ##
-    ##wait_key()
+    ##utils.wait_key()
     ##
     ### fit and find max
     ##madj = find_best_madj(data2)
     ##
-    ##wait_key()
+    ##utils.wait_key()
     plt.show()
     plt.close()
 

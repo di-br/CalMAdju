@@ -7,7 +7,8 @@ from __future__ import print_function
 import sys
 import os
 
-BASE_DIR = 'images'
+# Base directory for images taken/assessed
+base_dir = ''
 
 
 def wait_key(print_msg="press a key when ready\n"):

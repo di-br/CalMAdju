@@ -10,6 +10,13 @@ def run(argv = sys.argv):
 
     This will read all options from the command line
     """
+    import utils
+    import gphoto
+
+    # Set path to images
+    utils.base_dir = 'images'
+    # Disable automatic camera changes
+    gphoto.auto_cam = False
 
     # Parse command line options
 
@@ -24,16 +31,18 @@ if __name__ == '__main__':
     This will run the script and not require a camera or user interaction,
     solely relying on existing images to test sharpness.
     """
+    import utils
+    import gphoto
+
+    # Set all options
+
+    # Set path to images
+    utils.base_dir = 'images'
 
     # Disable camera detection and disable automatic adjustment setting
     #   This will have no real effect, since no gphoto calls should be made
     #   anyway, remember, we want a dry-run
-    from calmadju.gphoto import auto_cam
-
-    # Set all options
-
-    # Assume we have no camera
-    auto_cam = False
+    gphoto.auto_cam = False
 
     # Run main script
     cal.main()

@@ -8,7 +8,7 @@ import re
 # to fiddle with file paths
 import os
 
-from calmadju.utils import wait_key, BASE_DIR
+import utils
 
 # Check if we find the gphoto2 cdl utility
 try:
@@ -24,9 +24,10 @@ cameras = []
 # Set up custom parameter strings for known cameras
 # NOTE: currently only a Canon EOS 7D is known
 CUSTOMFUNCEX = {}
-CUSTOMFUNCEX['Canon EOS 7D'] = 'c4,1,3,b8,d,502,1,0,504,1,0,503,1,0,505,1,' \
-'0,507,5,2,2,VALUE,2,0,512,2,0,17,513,1,1,510,1,0,514,1,0,515,1,0,50e,1,0,516,1,' \
-'1,60f,1,0,'
+CUSTOMFUNCEX['Canon EOS 7D'] = \
+'c4,1,3,b8,d,502,1,0,504,1,0,503,1,0,505,1,0,507,5,2,2,' \
+'VALUE,' \
+'2,0,512,2,0,17,513,1,1,510,1,0,514,1,0,515,1,0,50e,1,0,516,1,1,60f,1,0,'
 
 CAMERA_BANNER = """
 +------------------------------------------------------------------+           
@@ -84,16 +85,16 @@ def find_camera():
 
     n_cameras = 0
     for line in gp_detect:
-        # why is there a 'Loading sth usb something' message...?
+        # Why is there a 'Loading sth usb something' message...?
         if not re.match(r"(Loadin|Model|(-)+)", line, re.IGNORECASE):
             n_cameras = n_cameras + 1
             cameras.append(line.split()[0])
 
-    # do we _have_ a camera?
+    # Do we _have_ a camera?
     if n_cameras < 1:
         print("\nNo camera found!\n")
         exit(1)
-    # or more than one we don't want to deal with?
+    # Or more than one we don't want to deal with?
     if n_cameras >= 1:
         print("Camera(s) found:")
         for cam in cameras:
@@ -117,7 +118,7 @@ def find_camera():
 def prepare_camera():
     ''' Advise the user on how to set up the camera. '''
     print(CAMERA_BANNER)
-    wait_key()
+    utils.wait_key()
 
     return
 
@@ -127,7 +128,7 @@ def set_af_microadjustment(value):
     automagically (for certain cameras).
     '''
     if auto_cam:
-        # change the adjustment value ourselves
+        # Change the adjustment value ourselves
         pre, post = CUSTOMFUNCEX[cameras[0]].split('VALUE')[:2]
         if value >= 0:
             hexvalue = "%02x" % value
@@ -140,14 +141,14 @@ def set_af_microadjustment(value):
     else:
         print("Please change the microadjustment level to {0} and press a "
               "key when ready".format(value))
-        wait_key("")
+        utils.wait_key("")
 
     return
 
 
 def get_image(filename):
     ''' Capture an image and download said image. '''
-    filename = os.path.join(BASE_DIR, filename)
+    filename = os.path.join(utils.base_dir, filename)
     command = ["--filename={0}".format(filename), "--force-overwrite",
                "--capture-image-and-download"]
     try:
