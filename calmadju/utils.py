@@ -7,6 +7,9 @@ from __future__ import print_function
 import sys
 import os
 
+BASE_DIR = 'images'
+
+
 def wait_key(print_msg="press a key when ready\n"):
     ''' Wait for a key press on the console. '''
     result = None

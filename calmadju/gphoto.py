@@ -1,25 +1,31 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """This module deals with the camera interaction."""
 
-# have new print 'statements' (Python 3.0)
+# Have new print 'statements' (Python 3.0)
 from __future__ import print_function
-# use regex to do some filtering and splitting
+# Use regex to do some filtering and splitting
 import re
+# to fiddle with file paths
+import os
 
-from calmadju.utils import wait_key
+from calmadju.utils import wait_key, BASE_DIR
 
-# check if we find the gphoto2 cdl utility
+# Check if we find the gphoto2 cdl utility
 try:
     from sh import gphoto2 as gp
 except ImportError:
     print("\ngphoto2 not found\n")
     exit(1)
 
+# Set initial values for detected camera
+auto_cam = False
+cameras = []
+
 # Set up custom parameter strings for known cameras
 # NOTE: currently only a Canon EOS 7D is known
 CUSTOMFUNCEX = {}
-CUSTOMFUNCEX['Canon EOS 7D'] = 'c4,1,3,b8,d,502,1,0,504,1,0,503,1,0,505,1,'
-'0,507,5,2,2,VALUE,2,0,512,2,0,17,513,1,1,510,1,0,514,1,0,515,1,0,50e,1,0,516,1,'
+CUSTOMFUNCEX['Canon EOS 7D'] = 'c4,1,3,b8,d,502,1,0,504,1,0,503,1,0,505,1,' \
+'0,507,5,2,2,VALUE,2,0,512,2,0,17,513,1,1,510,1,0,514,1,0,515,1,0,50e,1,0,516,1,' \
 '1,60f,1,0,'
 
 CAMERA_BANNER = """
@@ -41,11 +47,11 @@ CAMERA_BANNER = """
 
 def check_version():
     ''' Check if we have a sufficient libgphoto2 version. '''
-    # enquire gphoto2 version
+    # Enquire gphoto2 version
     try:
         gp_version = gp("--version", _err='gp_error.log')
     except:
-        print("\ngphoto2 cannot be called?\n")
+        print("\ngphoto2 cannot be called?\nExiting\n")
         exit(1)
 
     for line in gp_version:
@@ -54,13 +60,13 @@ def check_version():
             version_major, version_minor, version_revision = (
                     version.split(".")[:3])
 
-    print("found gphoto2 version {0}.{1}.{2}".format(
+    print("Found gphoto2 version {0}.{1}.{2}".format(
           version_major, version_minor, version_revision))
 
-    # we know v2.5.11 to work, so check for it
+    # We know v2.5.11 to work, so check for it
     from pkg_resources import parse_version
     if parse_version(version) < parse_version("2.5.11"):
-        print("\nsorry, gphoto2 version probably too old\nexiting\n")
+        print("\nSorry, the gphoto2 version found is probably too old.\nExiting\n")
         exit(1)
 
     return
@@ -73,11 +79,10 @@ def find_camera():
     try:
         gp_detect = gp("--auto-detect", _err='gp_error.log')
     except:
-        print("\ncannot auto-detect cameras\n")
+        print("\nCannot auto-detect any cameras.\nExiting\n")
         exit(1)
 
     n_cameras = 0
-    cameras = []
     for line in gp_detect:
         # why is there a 'Loading sth usb something' message...?
         if not re.match(r"(Loadin|Model|(-)+)", line, re.IGNORECASE):
@@ -86,27 +91,27 @@ def find_camera():
 
     # do we _have_ a camera?
     if n_cameras < 1:
-        print("\nno camera found!\n")
+        print("\nNo camera found!\n")
         exit(1)
     # or more than one we don't want to deal with?
     if n_cameras >= 1:
-        print("camera(s) found:")
+        print("Camera(s) found:")
         for cam in cameras:
             print("\t{0}".format(cam))
         if n_cameras > 1:
-            print("\nplease attach only one camera!\n")
+            print("\nPlease attach only one camera!\n")
             exit(1)
 
     # do we know the camera's custom function string?
     if cameras[0] in CUSTOMFUNCEX:
-        print("we match settings for the custom functions ex call\n")
+        print("We match settings for the custom functions ex call\n")
         auto_cam = True
     else:
-        print("no known settings for this camera, you will have to adjust the "
+        print("No known settings for this camera, you will have to adjust the "
               "settings manually\n")
         auto_cam = False
 
-    return auto_cam, cameras
+    return
 
 
 def prepare_camera():
@@ -117,7 +122,7 @@ def prepare_camera():
     return
 
 
-def set_af_microadjustment(value, auto_cam, cameras):
+def set_af_microadjustment(value):
     ''' Change the AF microadjustment, either manually (by the user) or
     automagically (for certain cameras).
     '''
@@ -133,8 +138,8 @@ def set_af_microadjustment(value, auto_cam, cameras):
                                                                 post)]
         gp_madj = gp(command, _out='gp_output.log', _err='gp_error.log')
     else:
-        print("please change the microadjustment level to {0} and press a "
-        "key when ready".format(value))
+        print("Please change the microadjustment level to {0} and press a "
+              "key when ready".format(value))
         wait_key("")
 
     return
@@ -148,7 +153,7 @@ def get_image(filename):
     try:
         gp_capture = gp(command, _out='gp_output.log', _err='gp_error.log')
     except:
-        print("\nerror capturing an image!\n")
+        print("\nError capturing an image!\nExiting\n")
         exit(1)
 
     return

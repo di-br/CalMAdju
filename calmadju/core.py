@@ -13,14 +13,12 @@ import cv2
 # import os to wait for keys pressed
 import os
 
-from calmadju.utils import wait_key
+from calmadju.utils import wait_key, BASE_DIR
 from calmadju.gphoto import check_version, find_camera, prepare_camera, \
         get_image, set_af_microadjustment
 
 # Turn off toolbar for matplotlib windows
 mpl.rcParams['toolbar'] = 'None'
-
-BASE_DIR = "images"
 
 GREETING = """
 This will try to calibrate your autofocus (AF) micro-adjustments (MADJ)
@@ -255,11 +253,7 @@ def main():
     greeting()
     check_version()
     ## UNCOMMENT FOR NON-DRY-RUN
-    #auto_cam, cameras = find_camera()
-    ## COMMENT FOR NON-DRY-RUN
-    auto_cam = False
-    ## COMMENT FOR NON-DRY-RUN
-    cameras = ["test"]
+    #find_camera()
 
     prepare_camera()
 
@@ -288,7 +282,7 @@ def main():
     norm = [1.0, 1.0]
 
     for value in [-20, -15, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 15, 20]:
-        set_af_microadjustment(value, auto_cam, cameras)
+        set_af_microadjustment(value)
         current_image_name = "AFtest_iter_{r}_adj_{v}.jpg".format(r=run, v=value)
         ## UNCOMMENT FOR NON-DRY-RUN
         #get_image(current_image_name)
@@ -317,7 +311,7 @@ def main():
     ### iterate 7 points around max
     ##run = 1
     ##for value in range(madj-3,madj+4,1):
-    ##    set_af_microadjustment(value, auto_cam, cameras)
+    ##    set_af_microadjustment(value)
     ##    current_image_name = "AFtest_iter_"+str(run)+"_adj_"+str(value)+".jpg"
     ##    get_image(current_image_name)
     ##    sharpness = estimate_sharpness(current_image_name, x_window, y_window)[0]
