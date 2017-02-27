@@ -1,10 +1,8 @@
 #!/usr/bin/python
-"""This module helps calibrating your camera's AF system."""
+"""The core module to help calibrating your camera's AF system."""
 
 # have new print 'statements' (Python 3.0)
 from __future__ import print_function
-# use regex to do some filtering and splitting
-import re
 # some maths bits and bobs we require
 import numpy as np
 # and plotting data and images
@@ -12,37 +10,17 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 # we use some of OpenCV's magic (barely)
 import cv2
-# import sys and os to wait for keys pressed
-import sys
+# import os to wait for keys pressed
 import os
 
-# check if we find the gphoto2 cdl utility
-try:
-    from sh import gphoto2 as gp
-except ImportError:
-    print("\ngphoto2 not found\n")
-    exit(1)
+from calmadju.utils import wait_key
+from calmadju.gphoto import check_version, find_camera, prepare_camera, \
+        get_image, set_af_microadjustment
 
 # turn off toolbar for matplotlib windows
 mpl.rcParams['toolbar'] = 'None'
 
 BASE_DIR = "images"
-
-CAMERA_BANNER = """                                                            
-+------------------------------------------------------------------+           
-| NOW YOU NEED TO SET UP YOUR CAMERA                               |           
-|                                                                  |           
-| * put camera on a tripod with suitable distance to target        |           
-| * align focal plane parallel to target, central to target        |           
-| * make sure the shutter/release button does autofocus and meter  |           
-| * reduce ISO value to a minimum to reduce noise                  |           
-| * set image format to JPG to download suitable files             |           
-| * reduce DOF to a minimum, i.e. open aperture as far as possible |           
-|   to have biggest impact of front/back focussing                 |           
-| * ensure constant and even lighting of target                    |           
-+------------------------------------------------------------------+           
-                                                                               
-"""
 
 GREETING = """
 this will try to calibrate your autofocus (AF) micro-adjustments (MADJ)
@@ -51,162 +29,11 @@ this will try to calibrate your autofocus (AF) micro-adjustments (MADJ)
 please attach your camera, switch it on, and press a key
 """
 
-# set up custom parameter strings for known cameras
-# NOTE: currently only a Canon EOS 7D is known
-# this MAY only work for one lens. using another lens with this command only repeatedly crashed the camera...
-CUSTOMFUNCEX = {}
-CUSTOMFUNCEX['Canon EOS 7D'] = 'c4,1,3,b8,d,502,1,0,504,1,0,503,1,0,505,1,'
-'0,507,5,2,2,VALUE,2,0,512,2,0,17,513,1,1,510,1,0,514,1,0,515,1,0,50e,1,0,516,1,'
-'1,60f,1,0,'
-
 
 def greeting():
     ''' Print hello world and 'version'. '''
     print(GREETING)
     wait_key("")
-
-    return
-
-
-def check_version():
-    ''' Check if we have a sufficient libgphoto2 version. '''
-    # enquire gphoto2 version
-    try:
-        gp_version = gp("--version", _err='gp_error.log')
-    except:
-        print("\ngphoto2 cannot be called?\n")
-        exit(1)
-
-    for line in gp_version:
-        if re.match(r"libgphoto2\s+", line, re.IGNORECASE):
-            version = line.split()[1]
-            version_major, version_minor, version_revision = (
-                    version.split(".")[:3])
-
-    print("found gphoto2 version {0}.{1}.{2}".format(
-          version_major, version_minor, version_revision))
-
-    # we know v2.5.11 to work, so check for it
-    from pkg_resources import parse_version
-    if parse_version(version) < parse_version("2.5.11"):
-        print("\nsorry, gphoto2 version probably too old\nexiting\n")
-        exit(1)
-
-    return
-
-
-def find_camera():
-    ''' Identify the attached camera and switch between manual and
-    automatic microadjustment.
-    '''
-    try:
-        gp_detect = gp("--auto-detect", _err='gp_error.log')
-    except:
-        print("\ncannot auto-detect cameras\n")
-        exit(1)
-
-    n_cameras = 0
-    cameras = []
-    for line in gp_detect:
-        # why is there a 'Loading sth usb something' message...?
-        if not re.match(r"(Loadin|Model|(-)+)", line, re.IGNORECASE):
-            n_cameras = n_cameras + 1
-            cameras.append(line.split()[0])
-
-    # do we _have_ a camera?
-    if n_cameras < 1:
-        print("\nno camera found!\n")
-        exit(1)
-    # or more than one we don't want to deal with?
-    if n_cameras >= 1:
-        print("camera(s) found:")
-        for cam in cameras:
-            print("\t{0}".format(cam))
-        if n_cameras > 1:
-            print("\nplease attach only one camera!\n")
-            exit(1)
-
-    # do we know the camera's custom function string?
-    if cameras[0] in CUSTOMFUNCEX:
-        print("we match settings for the custom functions ex call\n")
-        auto_cam = True
-    else:
-        print("no known settings for this camera, you will have to adjust the "
-              "settings manually\n")
-        auto_cam = False
-
-    return auto_cam, cameras
-
-
-def wait_key(print_msg="press a key when ready\n"):
-    ''' Wait for a key press on the console. '''
-    result = None
-    return result
-    if print_msg:
-        print(print_msg)
-    if os.name == 'nt':
-        import msvcrt
-        result = msvcrt.getch()
-    else:
-        import termios
-        fileno = sys.stdin.fileno()
-
-        oldterm = termios.tcgetattr(fileno)
-        newattr = termios.tcgetattr(fileno)
-        newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
-        termios.tcsetattr(fileno, termios.TCSANOW, newattr)
-
-        try:
-            result = sys.stdin.read(1)
-        except IOError:
-            pass
-        finally:
-            termios.tcsetattr(fileno, termios.TCSAFLUSH, oldterm)
-
-    return result
-
-
-def prepare_camera():
-    ''' Advise the user on how to set up the camera. '''
-    print(CAMERA_BANNER)
-    wait_key()
-
-    return
-
-
-def set_af_microadjustment(value, auto_cam, cameras):
-    ''' Change the AF microadjustment, either manually (by the user) or
-    automagically (for certain cameras).
-    '''
-    if auto_cam:
-        # change the adjustment value ourselves
-        pre, post = CUSTOMFUNCEX[cameras[0]].split('VALUE')[:2]
-        if value >= 0:
-            hexvalue = "%02x" % value
-        else:
-            hexvalue = "%02x" % (256 + value)
-
-        command = ["--set-config=customfuncex={0}{1}{2}".format(pre, hexvalue,
-                                                                post)]
-        gp_madj = gp(command, _out='gp_output.log', _err='gp_error.log')
-    else:
-        print("please change the microadjustment level to {0} and press a "
-        "key when ready".format(value))
-        wait_key("")
-
-    return
-
-
-def get_image(filename):
-    ''' Capture an image and download said image. '''
-    filename = os.path.join(BASE_DIR, filename)
-    command = ["--filename={0}".format(filename), "--force-overwrite",
-               "--capture-image-and-download"]
-    try:
-        gp_capture = gp(command, _out='gp_output.log', _err='gp_error.log')
-    except:
-        print("\nerror capturing an image!\n")
-        exit(1)
 
     return
 
@@ -298,11 +125,11 @@ def find_center(filename):
     plt.ion()
     # show original image
     plt.subplot(1, 2, 1)
-    plt.imshow(img, cmap = 'gray')
+    plt.imshow(img, cmap='gray')
     plt.title('original image')
     # show 'relevant' region
     plt.subplot(1, 2, 2)
-    plt.imshow(cropped_image, cmap = 'gray')
+    plt.imshow(cropped_image, cmap='gray')
     plt.title('selected region')
     plt.draw()
 
@@ -325,12 +152,12 @@ def display_reference(filename, x_window, y_window):
     current_img = 0. * default_img
 
     plt.subplot(2, 2, 1)
-    plt.imshow(default_img, cmap = 'gray')
+    plt.imshow(default_img, cmap='gray')
     plt.title('original image')
     plt.xticks([])
     plt.yticks([])
     plt.subplot(2, 2, 2)
-    plt.imshow(current_img, cmap = 'gray')
+    plt.imshow(current_img, cmap='gray')
     plt.title('microadjusted image')
     plt.xticks([])
     plt.yticks([])
@@ -361,7 +188,7 @@ def display_current(current_filename, x_window, y_window, data):
             y_data[val + 20] = 0
 
     plt.subplot(2, 2, 2)
-    plt.imshow(current_img, cmap = 'gray')
+    plt.imshow(current_img, cmap='gray')
     plt.title('microadjusted image')
     plt.xticks([])
     plt.yticks([])
@@ -383,7 +210,7 @@ def find_best_madj(data):
         return a * np.exp(-1/c * (x-b)**2)
 
     print("trying to fit the measured points w/ a Gaussian to determine best "
-           "'region'\n")
+          "'region'\n")
 
     # extract sharpness data
     x_data = []
@@ -412,8 +239,8 @@ def find_best_madj(data):
     plt.xlabel('microadjustment')
     plt.plot(x_data, y_data, 'bo',
              x_data2, func(x_data2, popt[0], popt[1], popt[2]), 'k',
-             int(popt[1]), func(int(popt[1]), popt[0], popt[1], popt[2]),'ro')
-    plt.ylim([minval * .9,maxval * 1.1])
+             int(popt[1]), func(int(popt[1]), popt[0], popt[1], popt[2]), 'ro')
+    plt.ylim([minval * .9, maxval * 1.1])
     plt.draw()
 
     return int(popt[1])
@@ -427,7 +254,7 @@ def main():
     ## UNCOMMENT FOR NON-DRY-RUN
     #auto_cam, cameras = find_camera()
     ## COMMENT FOR NON-DRY-RUN
-    auto_cam=False
+    auto_cam = False
     ## COMMENT FOR NON-DRY-RUN
     cameras = ["test"]
 
@@ -463,7 +290,7 @@ def main():
         ## UNCOMMENT FOR NON-DRY-RUN
         #get_image(current_image_name)
         sharpness = estimate_sharpness(current_image_name, x_window, y_window)
-        if (not found_norm):
+        if not found_norm:
             found_norm = True
             norm = sharpness
         sharpness = [sharpness[0] / norm[0], sharpness[2] / norm[2]]
