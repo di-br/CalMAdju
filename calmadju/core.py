@@ -1,14 +1,14 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """The core module to help calibrating your camera's AF system."""
 
-# have new print 'statements' (Python 3.0)
+# Have new print 'statements' (Python 3.0)
 from __future__ import print_function
-# some maths bits and bobs we require
+# Some maths bits and bobs we require...
 import numpy as np
-# and plotting data and images
+# ...and plotting data and images
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-# we use some of OpenCV's magic (barely)
+# We use some of OpenCV's magic (barely)
 import cv2
 # import os to wait for keys pressed
 import os
@@ -17,16 +17,16 @@ from calmadju.utils import wait_key
 from calmadju.gphoto import check_version, find_camera, prepare_camera, \
         get_image, set_af_microadjustment
 
-# turn off toolbar for matplotlib windows
+# Turn off toolbar for matplotlib windows
 mpl.rcParams['toolbar'] = 'None'
 
 BASE_DIR = "images"
 
 GREETING = """
-this will try to calibrate your autofocus (AF) micro-adjustments (MADJ)
-(or at least help in finding a good value)
+This will try to calibrate your autofocus (AF) micro-adjustments (MADJ)
+(or at least help in finding a good value).
 
-please attach your camera, switch it on, and press a key
+Please attach your camera, switch it on, and press a key.
 """
 
 
@@ -41,10 +41,10 @@ def greeting():
 def safe_load_image(filename):
     """Try loading the given file."""
     try:
-        # this will read the file in greyscale (argument 0)
+        # This will read the file in greyscale (argument 0)
         filename = os.path.join(BASE_DIR, filename)
         img = cv2.imread(filename, 0)
-        # now, instead of the above we could load the image w/
+        # Now, instead of the above we could load the image w/
         # matplotlib and convert the resulting RGB data into
         # grayscale, thus reducing dependencies
         # https://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python
@@ -69,38 +69,41 @@ def estimate_sharpness(filename, x_window, y_window):
     ''' Estimate sharpness of the image by looking at a contrast value
     and image gradients.
     '''
-    # read file
+    # Read file
     img = safe_load_image(filename)
     reduced_img = crop_image(img, x_window, y_window)
 
-    # compute a variance measure that should prefer a contrasty result, thus a sharper one
+    # Compute a variance measure that should prefer a contrasty result,
+    # thus a sharper one
     score1 = np.mean(np.var(reduced_img))
 
-    # compute gradients in x and y that should prefer more edges, so a sharper image
+    # Compute gradients in x and y that should prefer more edges,
+    # so a sharper image
     gy, gx = np.gradient(reduced_img, 2)
     gnorm = np.sqrt(gx**2 + gy**2)
-    # normalise to max value, in the hope of compensating lighting variations?
+    # Normalise to max value, in the hope of compensating lighting variations?
     gnorm = gnorm / np.max(gnorm)
     score2 = np.mean(gnorm)
 
     score3 = 0.
     fraction = 0.3
     # compute fft measure
-    fft = np.fft.fft2(reduced_img)      # it may be better to compute FFT on larger section
-                                        # (to get more frequencies...)
-    # look at real part, normalise, and shift zeroth component to center
+    fft = np.fft.fft2(reduced_img)  # It may be better to compute FFT on larger
+                                    # section (to get more frequencies...)
+    # Look at real part, normalise, and shift zeroth component to center
     fft_usable = np.abs(np.real(np.fft.fftshift(fft)))
     fft_usable /= np.max(fft_usable)
 
-    # find center of frequencies and the extent
+    # Find center of frequencies and the extent
     center_x = np.shape(fft)[0] / 2
     center_y = np.shape(fft)[1] / 2
     region_x_min = np.int(center_x - fraction*center_x)
     region_x_max = np.int(center_x + fraction*center_x)
     region_y_min = np.int(center_y - fraction*center_y)
     region_y_max = np.int(center_y + fraction*center_y)
-    # loop from center outwards, a fraction of frequencies
-    for value in np.nditer(fft_usable[region_x_min:region_x_max, region_y_min:region_y_max]):
+    # Loop from center outwards, a fraction of frequencies
+    for value in np.nditer(fft_usable[region_x_min:region_x_max,
+                                      region_y_min:region_y_max]):
         score3 += np.sqrt(value)
 
     return [score1, score2, score3]
@@ -110,10 +113,10 @@ def find_center(filename):
     ''' Display image w/ matplotlib and have the user restrict the interesting
     area.
     '''
-    # read file
+    # Read file
     img = safe_load_image(filename)
 
-    # start with some extent
+    # Start with some extent
     x_window = 900
     y_window = 600
 
@@ -121,13 +124,13 @@ def find_center(filename):
     # we have a fixed window bang in the middle right now...
     cropped_image = crop_image(img, x_window, y_window)
 
-    # display
+    # Display
     plt.ion()
-    # show original image
+    # Show original image
     plt.subplot(1, 2, 1)
     plt.imshow(img, cmap='gray')
     plt.title('original image')
-    # show 'relevant' region
+    # Show 'relevant' region
     plt.subplot(1, 2, 2)
     plt.imshow(cropped_image, cmap='gray')
     plt.title('selected region')
@@ -144,11 +147,11 @@ def display_reference(filename, x_window, y_window):
     ''' Display two images side by side, also show the sharpness values we got
     so far.
     '''
-    # read reference file
+    # Read reference file
     img = safe_load_image(filename)
     default_img = crop_image(img, x_window, y_window)
 
-    # clear 'adjusted' file
+    # Clear 'adjusted' file
     current_img = 0. * default_img
 
     plt.subplot(2, 2, 1)
@@ -168,11 +171,11 @@ def display_current(current_filename, x_window, y_window, data):
     ''' Display two images side by side, also show the sharpness values we got
     so far.
     '''
-    # read 'adjusted' file
+    # Read 'adjusted' file
     img = safe_load_image(current_filename)
     current_img = crop_image(img, x_window, y_window)
 
-    # extract sharpness data
+    # Extract sharpness data
     x_data = np.array(range(-20, 21, 1))
     y_data = x_data * 1.0
     minval = 1e6
@@ -209,10 +212,10 @@ def find_best_madj(data):
         """Fit function."""
         return a * np.exp(-1/c * (x-b)**2)
 
-    print("trying to fit the measured points w/ a Gaussian to determine best "
+    print("Trying to fit the measured points w/ a Gaussian to determine best "
           "'region'\n")
 
-    # extract sharpness data
+    # Extract sharpness data
     x_data = []
     y_data = []
     minval = 1e6
@@ -227,11 +230,11 @@ def find_best_madj(data):
                 maxval = data[val + 20]
 
     popt, pcov = curve_fit(func, x_data, y_data, p0=[maxval, 0, 1])
-    print('parameters to the Gaussian function are: {0}'.format(popt))
-    print('the best microadjustment could thus be around {0}'.
+    print('Parameters to the Gaussian function are: {0}'.format(popt))
+    print('The best microadjustment could thus be around {0}'.
           format(int(popt[1])))
 
-    # now plot data and fit
+    # Now plot data and fit
     x_data2 = np.arange(-20.0, 20.0, 0.5)
     plt.subplot(2, 2, 4)
     plt.title('sharpness values')
@@ -260,19 +263,19 @@ def main():
 
     prepare_camera()
 
-    # take a reference image
+    # Take a reference image
     print("taking a reference image")
     ## UNCOMMENT FOR NON-DRY-RUN
     reference_image = 'reference.jpg'
     #get_image(reference_image)
 
-    # show reference image and get user to adjust relevant area
+    # Show reference image and get user to adjust relevant area
     x_window, y_window = find_center(reference_image)
 
-    # have empty results array
+    # Have empty results array
     data = np.zeros(41)
 
-    # now loop over a couple of values and evaluate image sharpness
+    # Now loop over a couple of values and evaluate image sharpness,
     # start with 0 to have a default image first
     # NOTE: we allow for several 'runs' to revisit some values around the
     # approximate ideal point more often, this is a TODO atm
@@ -280,7 +283,7 @@ def main():
     plt.ion()
     display_reference(reference_image, x_window, y_window)
 
-    # normalising variables
+    # Normalising variables
     found_norm = False
     norm = [1.0, 1.0]
 
@@ -294,18 +297,19 @@ def main():
             found_norm = True
             norm = sharpness
         sharpness = [sharpness[0] / norm[0], sharpness[2] / norm[2]]
-        # keep the result, assuming both parameters are ok, so average the
+        # Keep the result, assuming both parameters are ok, so average the
         # normalised values
         data[value + 20] = np.mean(sharpness)
-        # at a later stage, we should really fit both (or also the FFT one)
+        # At a later stage, we should really fit both (or also the FFT one)
         # independently and compare the results...
         display_current(current_image_name, x_window, y_window, data)
-        print("sharpness {0} for adjustment {1}".format(sharpness, value))
+        print("Sharpness {0} for adjustment {1}".format(sharpness, value))
 
     wait_key()
 
-    # fit and find max
+    # Fit and find max
     madj = find_best_madj(data)
+    raw_input()
 
     wait_key()
 
