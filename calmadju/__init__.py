@@ -2,7 +2,7 @@
 """Interface to CalMAdju"""
 
 import sys
-import calmadju.core as cal
+import core as cal
 
 
 def run(argv = sys.argv):
@@ -18,6 +18,8 @@ def run(argv = sys.argv):
     utils.base_dir = 'images'
     # Disable automatic camera changes
     gphoto.auto_cam = False
+    # This line will force the AF auto-set to always fail
+    gphoto.cameras.append('Test mode')
 
     # Parse command line options
     parser = argparse.ArgumentParser(prog=argv[0],
@@ -68,12 +70,15 @@ if __name__ == '__main__':
 
     # Set path to images
     utils.base_dir = 'images'
-
+    # Do not wait for user interaction
+    utils.batch = True
     # Disable camera detection and disable automatic adjustment setting
     #   This will have no real effect, since no gphoto calls should be made
     #   anyway, remember, we want a dry-run
     gphoto.dry = True
     gphoto.auto_cam = False
+    # This line will force the AF auto-set to always fail
+    gphoto.cameras.append('Test mode')
 
     # Run main script
     cal.main()

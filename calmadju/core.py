@@ -130,8 +130,8 @@ def find_center(filename):
     plt.title('selected region')
     plt.draw()
 
-    utils.wait_key()
     plt.show()
+    utils.wait_key(override=True)
     plt.close()
 
     return x_window, y_window
