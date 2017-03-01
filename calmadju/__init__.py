@@ -2,7 +2,9 @@
 """Interface to CalMAdju"""
 
 import sys
-import core as cal
+import core
+import utils
+import gphoto
 
 
 def run(argv = sys.argv):
@@ -11,8 +13,6 @@ def run(argv = sys.argv):
     This will read all options from the command line
     """
     import argparse
-    import utils
-    import gphoto
 
     # Set path to images
     utils.base_dir = 'images'
@@ -53,7 +53,7 @@ def run(argv = sys.argv):
     utils.base_dir = args.image_path
 
     # Run main script
-    cal.main()
+    core.main()
 
 
 if __name__ == '__main__':
@@ -63,8 +63,6 @@ if __name__ == '__main__':
     This will run the script and not require a camera or user interaction,
     solely relying on existing images to test sharpness.
     """
-    import utils
-    import gphoto
 
     # Set all options
 
@@ -81,4 +79,4 @@ if __name__ == '__main__':
     gphoto.cameras.append('Test mode')
 
     # Run main script
-    cal.main()
+    core.main()

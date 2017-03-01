@@ -25,6 +25,8 @@ This will try to calibrate your autofocus (AF) micro-adjustments (MADJ)
 
 """
 
+reference_image = 'reference.jpg'
+
 
 def greeting():
     ''' Print hello world and 'version'. '''
@@ -247,14 +249,13 @@ def find_best_madj(data):
 def main():
     """Main function running the micro adjustment testing."""
     greeting()
+
     gphoto.check_version()
     gphoto.find_camera()
-
     gphoto.prepare_camera()
 
     # Take a reference image
     print("Taking a reference image")
-    reference_image = 'reference.jpg'
     gphoto.get_image(reference_image)
 
     # Show reference image and get user to adjust relevant area
@@ -271,26 +272,24 @@ def main():
     plt.ion()
     display_reference(reference_image, x_window, y_window)
 
-    # Normalising variables
-    found_norm = False
-    norm = [1.0, 1.0]
-
     for value in [-20, -15, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 15, 20]:
         gphoto.set_af_microadjustment(value)
         current_image_name = "AFtest_iter_{r}_adj_{v}.jpg".format(r=run, v=value)
         gphoto.get_image(current_image_name)
         sharpness = estimate_sharpness(current_image_name, x_window, y_window)
-        if not found_norm:
-            found_norm = True
+        try:
+            norm
+        except NameError:
             norm = sharpness
-        sharpness = [sharpness[0] / norm[0], sharpness[2] / norm[2]]
+
+        combined_sharpness = [sharpness[0] / norm[0], sharpness[2] / norm[2]]
         # Keep the result, assuming both parameters are ok, so average the
         # normalised values
-        data[value + 20] = np.mean(sharpness)
+        data[value + 20] = np.mean(combined_sharpness)
         # At a later stage, we should really fit both (or also the FFT one)
         # independently and compare the results...
         display_current(current_image_name, x_window, y_window, data)
-        print("Sharpness {0} for adjustment {1}".format(sharpness, value))
+        print("Sharpness {0} for adjustment {1}".format(combined_sharpness, value))
 
     utils.wait_key()
 
