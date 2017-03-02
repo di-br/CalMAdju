@@ -23,15 +23,15 @@ def run(argv = sys.argv):
 
     # Parse command line options
     parser = argparse.ArgumentParser(prog=argv[0],
-                                     description='Calibrate auto-focus micro-adjustments.',
+                                     description='Helps calibrate the micro-adjustments for your auto-focus system.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--no-camera', dest='camera', action='store_true',
                         help='do not use gphoto2 to interact with camera (simply process previously '
-                        'taken images).')
+                        'taken images)')
     parser.add_argument('--batch-mode', dest='batch', action='store_true',
                         help='run in batch mode without user interaction')
     parser.add_argument('-i', '--image_path', metavar='path', type=str, default='images',
-                        help='path to store/read images to/from.')
+                        help='path to store/read images to/from')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s version: ALPHA',
                         help='show version')
 
@@ -53,7 +53,8 @@ def run(argv = sys.argv):
     utils.base_dir = args.image_path
 
     # Run main script
-    core.main()
+    runner = core.Core()
+    runner.main()
 
 
 if __name__ == '__main__':
@@ -79,4 +80,5 @@ if __name__ == '__main__':
     gphoto.cameras.append('Test mode')
 
     # Run main script
-    core.main()
+    runner = core.Core()
+    runner.main()

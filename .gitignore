@@ -48,3 +48,5 @@ ENV/
 # vim swap and undo files
 *.swp
 *.un~
+
+tags
