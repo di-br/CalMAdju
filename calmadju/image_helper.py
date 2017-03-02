@@ -17,7 +17,7 @@ class Image(object):
 
 
     def __init__(self, filename=None):
-        """ Instanciate an image object, optionally loading data in the process. """
+        """ Instantiate an image object, optionally loading data in the process. """
 
         # Keep image filename (for whatever reason)
         self.filename = filename
@@ -28,10 +28,10 @@ class Image(object):
             self.img = None
         else:
             self.filename = filename
-            self.safe_load_image(filename)
+            self.load(filename)
 
 
-    def safe_load_image(self, filename):
+    def load(self, filename):
         """ Try loading the given file. """
 
         # This will read the file in greyscale (argument 0)
@@ -48,7 +48,7 @@ class Image(object):
             exit(1)
 
 
-    def crop_image(self, x_window, y_window):
+    def crop(self, x_window, y_window):
         """ Crop image to the given size. """
 
         height, width = self.img.shape[:2]

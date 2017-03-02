@@ -36,7 +36,9 @@ class Core(object):
         # Start with some extent
         self.x_window = 900
         self.y_window = 600
-
+        # Lists for adjustments and sharpness estimates
+        self.adjustment = []
+        self.sharpness = []
 
 
     @staticmethod
@@ -55,7 +57,7 @@ class Core(object):
 
         # Read file
         image = Image(filename)
-        image.crop_image(x_window, y_window)
+        image.crop(x_window, y_window)
 
         # Compute a variance measure that should prefer a contrasty result,
         # thus a sharper one
@@ -103,7 +105,7 @@ class Core(object):
         # Read file
         image = Image(filename)
         # And crop to standard size
-        image.crop_image(self.x_window, self.y_window)
+        image.crop(self.x_window, self.y_window)
 
         # Display both images
         plt.ion()
@@ -133,7 +135,7 @@ class Core(object):
 
         # Read reference file
         reference_image = Image(self.reference_image_filename)
-        reference_image.crop_image(self.x_window, self.y_window)
+        reference_image.crop(self.x_window, self.y_window)
 
         plt.subplot(2, 2, 1)
         plt.imshow(reference_image.cropped_img, cmap="gray")
@@ -143,29 +145,19 @@ class Core(object):
         plt.draw()
 
 
-    def display_current(self, data):
+    def display_current(self):
         """ Display two images side by side, also show the sharpness values we got
         so far.
         """
 
         # Read 'adjusted' file
         current_image = Image(self.current_image_filename)
-        current_image.crop_image(self.x_window, self.y_window)
+        current_image.crop(self.x_window, self.y_window)
 
         # Extract sharpness data
-        x_data = np.array(range(-20, 21, 1))
-        y_data = x_data * 1.0
-        minval = 1e6
-        maxval = -1e6
-        for val in x_data:
-            if data[val + 20] != 0:
-                y_data[val + 20] = data[val + 20]
-                if data[val + 20] < minval:
-                    minval = data[val + 20]
-                if data[val + 20] > maxval:
-                    maxval = data[val + 20]
-            else:
-                y_data[val + 20] = 0
+        data = np.array([self.adjustment, self.sharpness])
+        minval = np.min(data[1, :])
+        maxval = np.max(data[1, :])
 
         plt.subplot(2, 2, 2)
         plt.imshow(current_image.cropped_img, cmap="gray")
@@ -174,15 +166,14 @@ class Core(object):
         plt.yticks([])
         plt.subplot(2, 2, 4)
         plt.title("sharpness values")
-        plt.ylabel("sharpness")
+        plt.ylabel("estimator")
         plt.xlabel("microadjustment")
-        plt.scatter(x_data, y_data)
+        plt.scatter(data[0, :], data[1, :])
         plt.ylim([minval * .9, maxval * 1.1])
         plt.draw()
 
 
-    @staticmethod
-    def find_best_madj(data):
+    def find_best_madj(self):
         """ Find best value by fitting a Gaussian. """
 
         from scipy.optimize import curve_fit
@@ -195,20 +186,11 @@ class Core(object):
               "'region'\n")
 
         # Extract sharpness data
-        x_data = []
-        y_data = []
-        minval = 1e6
-        maxval = -1.e6
-        for val in range(-20, 21, 1):
-            if data[val + 20] != 0:
-                x_data.append(val)
-                y_data.append(data[val + 20])
-                if data[val + 20] < minval:
-                    minval = data[val + 20]
-                if data[val + 20] > maxval:
-                    maxval = data[val + 20]
+        data = np.array([self.adjustment, self.sharpness])
+        minval = np.min(data[1, :])
+        maxval = np.max(data[1, :])
 
-        popt, pcov = curve_fit(func, x_data, y_data, p0=[maxval, 0, 1])
+        popt, pcov = curve_fit(func, data[0, :], data[1, :], p0=[maxval, 0, 1])
         print("Parameters to the Gaussian function are: {0}".format(popt))
         print("The best microadjustment could thus be around {0}".
               format(int(popt[1])))
@@ -217,9 +199,9 @@ class Core(object):
         x_data2 = np.arange(-20.0, 20.0, 0.5)
         plt.subplot(2, 2, 4)
         plt.title("sharpness values")
-        plt.ylabel("sharpness")
+        plt.ylabel("estimator")
         plt.xlabel("microadjustment")
-        plt.plot(x_data, y_data, "bo",
+        plt.plot(data[0, :], data[1, :], "bo",
                  x_data2, func(x_data2, popt[0], popt[1], popt[2]), "k",
                  int(popt[1]), func(int(popt[1]), popt[0], popt[1], popt[2]), "ro")
         plt.ylim([minval * .9, maxval * 1.1])
@@ -245,9 +227,6 @@ class Core(object):
         # Show reference image and get user to adjust relevant area
         self.find_center(self.reference_image_filename)
 
-        # Have empty results array
-        data = np.zeros(41)
-
         # Now loop over a couple of values and evaluate image sharpness,
         # start with 0 to have a default image first
         # NOTE: we want to allow for several 'runs' to revisit some values around the
@@ -269,16 +248,18 @@ class Core(object):
             combined_sharpness = [sharpness[0] / norm[0], sharpness[2] / norm[2]]
             # Keep the result, assuming both parameters are ok, so average the
             # normalised values
-            data[value + 20] = np.mean(combined_sharpness)
+            self.adjustment.append(value)
+            self.sharpness.append(np.mean(combined_sharpness))
+
             # At a later stage, we should really fit both (or also the FFT one)
             # independently and compare the results...
-            self.display_current(data)
+            self.display_current()
             print("Sharpness {0} for adjustment {1}".format(combined_sharpness, value))
 
         utils.wait_key()
 
         # Fit and find max
-        madj = self.find_best_madj(data)
+        madj = self.find_best_madj()
 
         utils.wait_key(override=True)
 
