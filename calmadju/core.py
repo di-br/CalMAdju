@@ -223,7 +223,9 @@ class Core(object):
         """ Find best value by fitting a Gaussian. """
 
         # TODO: make sharpness metric user-selectable
+        import scipy
         from scipy.optimize import curve_fit
+        from pkg_resources import parse_version
 
         def fit_function(x_var, amplitude, shift, width):
             """Fit function."""
@@ -238,9 +240,17 @@ class Core(object):
         maxval = np.max(data[1, :])
 
         try:
-            popt, pcov = curve_fit(fit_function,
-                                   data[0, :], data[1, :],
-                                   p0=[1.3*maxval, 0, 1])
+            if parse_version(scipy.version.version) == parse_version("0.18.0"):
+                # yet to be tested
+                popt, pcov = curve_fit(fit_function,
+                                       data[0, :], data[1, :],
+                                       p0=[maxval, 0, 1],
+                                       bounds=([0, np.min(data[0, :]), 1e-6],
+                                               [2*maxval, np.max(data[0, :]), 1.]))
+            else:
+                popt, pcov = curve_fit(fit_function,
+                                       data[0, :], data[1, :],
+                                       p0=[maxval, 0, 1])
         except ValueError:
             print("Something went wrong with the measured values, fit not possible")
             return 0
