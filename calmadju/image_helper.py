@@ -1,5 +1,23 @@
 #!/usr/bin/env python
-""" Image class to load and cut the images. """
+"""
+This file is part of CalMAdju.
+
+Copyright (C) 2016-2017 di-br@users.noreply.github.com
+                        https://github.com/di-br/CalMAdju
+
+CalMAdju is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+"""
 
 # Have new print 'statements' (Python 3.0)
 from __future__ import print_function
@@ -11,12 +29,15 @@ import os
 
 class Image(object):
     """ A class to keep all image data and take care of loading and manipulating
-    the images
+    the images.
     """
 
 
     def __init__(self, base_dir=None, filename=None):
-        """ Instantiate an image object, optionally loading data in the process. """
+        """ Instantiate an image object, optionally loading data in the process.
+
+        May take base directory (defaults to .) and filename to load image data from.
+        """
 
         # Keep image filename (for whatever reason)
         self.filename = filename
@@ -33,7 +54,10 @@ class Image(object):
 
 
     def load(self, base_dir, filename):
-        """ Try loading the given file. """
+        """ Try loading the given file.
+
+        Requires base directory and filename to load image data from.
+        """
 
         # This will read the file in greyscale (argument 0)
         self.filename = os.path.join(base_dir, filename)
@@ -50,7 +74,10 @@ class Image(object):
 
 
     def crop(self, x_window, y_window):
-        """ Crop image to the given size. """
+        """ Crop image to the given size.
+
+        Takes 2 parameters: symmetric extent in x&y starting from center position.
+        """
 
         height, width = self.img.shape[:2]
         x_center = width / 2
