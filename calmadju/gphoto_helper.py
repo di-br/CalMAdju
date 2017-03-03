@@ -95,8 +95,6 @@ class Gphoto(object):
             print("\nSorry, the gphoto2 version found is probably too old.\nExiting\n")
             exit(1)
 
-        return
-
 
     def find_camera(self):
         ''' Identify the attached camera and switch between manual and

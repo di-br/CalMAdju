@@ -38,6 +38,6 @@ def run(argv = sys.argv):
                   cameraless_mode=args.nocamera, camerasafe_mode=args.manual)
     runner.main()
 
+
 if __name__ == '__main__':
     run()
-

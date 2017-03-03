@@ -75,7 +75,6 @@ class Core(object):
         """ Print hello world and 'version'. """
 
         print(GREETING)
-        return
 
 
     def estimate_sharpness(self):
@@ -119,7 +118,6 @@ class Core(object):
         # Take region from center outwards, a fraction of frequencies
         score.append(np.sum(np.sqrt(fft_usable[region_x_min:region_x_max,
                                                region_y_min:region_y_max])))
-
         return score
 
 
@@ -204,11 +202,12 @@ class Core(object):
     def find_best_madj(self):
         """ Find best value by fitting a Gaussian. """
 
+        # TODO: make sharpness metric user-selectable
         from scipy.optimize import curve_fit
 
-        def func(x, a, b, c):
+        def fit_function(x_var, amplitude, shift, width):
             """Fit function."""
-            return a * np.exp(-1/c * (x-b)**2)
+            return amplitude * np.exp(-1/width * (x_var - shift)**2)
 
         print("Trying to fit the measured points w/ a Gaussian to determine best "
               "'region'\n")
@@ -218,7 +217,7 @@ class Core(object):
         minval = np.min(data[1, :])
         maxval = np.max(data[1, :])
 
-        popt, pcov = curve_fit(func, data[0, :], data[1, :], p0=[maxval, 0, 1])
+        popt, pcov = curve_fit(fit_function, data[0, :], data[1, :], p0=[maxval, 0, 1])
         print("Parameters to the Gaussian function are: {0}".format(popt))
         print("The best microadjustment could thus be around {0}".
               format(int(popt[1])))
@@ -230,8 +229,8 @@ class Core(object):
         plt.ylabel("estimator")
         plt.xlabel("microadjustment")
         plt.plot(data[0, :], data[1, :], "bo",
-                 x_data2, func(x_data2, popt[0], popt[1], popt[2]), "k",
-                 int(popt[1]), func(int(popt[1]), popt[0], popt[1], popt[2]), "ro")
+                 x_data2, fit_function(x_data2, popt[0], popt[1], popt[2]), "k",
+                 int(popt[1]), fit_function(int(popt[1]), popt[0], popt[1], popt[2]), "ro")
         plt.ylim([minval * .9, maxval * 1.1])
         plt.draw()
 
@@ -282,6 +281,7 @@ class Core(object):
         plt.ion()
         self.display_reference()
 
+        # TODO: make values user-selectable
         for value in [-20, -15, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 15, 20]:
             self.gphoto.set_af_microadjustment(value)
             self.current_image_filename = "AFtest_iter_{r}_adj_{v}.jpg".format(r=run, v=value)
