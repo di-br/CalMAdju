@@ -25,7 +25,7 @@ from calmadju.core import Core
 def run(argv=sys.argv):
     """Wrapper script to run CalMAdju, adds command line interface.
 
-    This will read all options from the command line
+    This will read all options from the command line.
     """
     import argparse
 

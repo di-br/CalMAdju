@@ -237,7 +237,22 @@ class Core(object):
         minval = np.min(data[1, :])
         maxval = np.max(data[1, :])
 
-        popt, pcov = curve_fit(fit_function, data[0, :], data[1, :], p0=[maxval, 0, 1])
+        try:
+            popt, pcov = curve_fit(fit_function,
+                                   data[0, :], data[1, :],
+                                   p0=[1.3*maxval, 0, 1])
+        except ValueError:
+            print("Something went wrong with the measured values, fit not possible")
+            return 0
+        except RuntimeError:
+            print("The fit did not converge.\n\nAre the images usable? Does the sharpness"
+                  "estimate indicate no real change in sharpness? In any case,"
+                  "the fit is not possible")
+            return 0
+        #except OptimizeWarning:
+        #    print("The fit did not return proper covariance values, so results may"
+        #          "be fishy. Check the plot")
+
         print("Parameters to the Gaussian function are: {0}".format(popt))
         print("The best microadjustment could thus be around {0}".
               format(int(popt[1])))

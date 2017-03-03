@@ -188,7 +188,7 @@ class Gphoto(object):
 
             command = ["--set-config=customfuncex={0}{1}{2}".format(pre, hexvalue,
                                                                     post)]
-            gp_madj = gp(command, _out='gp_output.log', _err='gp_error.log')
+            gp(command, _out='gp_output.log', _err='gp_error.log')
         else:
             print("Please change the microadjustment level to {0} and press "
                   "return when ready".format(value))
@@ -204,7 +204,7 @@ class Gphoto(object):
         command = ["--filename={0}".format(filename), "--force-overwrite",
                    "--capture-image-and-download"]
         try:
-            gp_capture = gp(command, _out='gp_output.log', _err='gp_error.log')
+            gp(command, _out='gp_output.log', _err='gp_error.log')
         except:
             print("\nError capturing an image!\nExiting\n")
             exit(1)
