@@ -7,7 +7,6 @@ from __future__ import print_function
 import cv2
 # import os to wait for keys pressed
 import os
-import utils
 
 
 class Image(object):
@@ -16,26 +15,28 @@ class Image(object):
     """
 
 
-    def __init__(self, filename=None):
+    def __init__(self, base_dir=None, filename=None):
         """ Instantiate an image object, optionally loading data in the process. """
 
         # Keep image filename (for whatever reason)
         self.filename = filename
         # Clear reduced image data
         self.cropped_img = None
+        if base_dir == None:
+            base_dir = "."
         # Either clear image data or load file
         if filename == None:
             self.img = None
         else:
             self.filename = filename
-            self.load(filename)
+            self.load(base_dir, filename)
 
 
-    def load(self, filename):
+    def load(self, base_dir, filename):
         """ Try loading the given file. """
 
         # This will read the file in greyscale (argument 0)
-        self.filename = os.path.join(utils.base_dir, filename)
+        self.filename = os.path.join(base_dir, filename)
         self.img = cv2.imread(self.filename, 0)
         # Now, instead of the above we could load the image w/
         # matplotlib and convert the resulting RGB data into
