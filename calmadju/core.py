@@ -145,33 +145,39 @@ class Core(object):
         """ Display image w/ matplotlib and have the user restrict the interesting
         area.
         """
-        # TODO: add a loop to query the user for input on the interesting area
-        # we have a fixed window bang in the middle right now...
 
         # Read file
         image = Image(self.base_dir, self.reference_image_filename)
         # And crop to standard size
         image.crop(self.x_window, self.y_window)
 
-        # Display both images
+        # Display both images and keep updating if we need to
         plt.ion()
 
-        # Show original image
-        plt.subplot(1, 2, 1)
-        plt.imshow(image.img, cmap="gray")
-        plt.title("original image")
-        # Show 'relevant' region
-        plt.subplot(1, 2, 2)
-        plt.imshow(image.cropped_img, cmap="gray")
-        plt.title("selected region")
-        plt.draw()
+        loop = True
+        while loop:
+            # Show original image
+            plt.subplot(1, 2, 1)
+            plt.imshow(image.img, cmap="gray")
+            plt.title("original image")
+            # Show 'relevant' region
+            plt.subplot(1, 2, 2)
+            plt.imshow(image.cropped_img, cmap="gray")
+            plt.title("selected region")
+            plt.draw()
+            plt.show()
 
-        plt.show()
+            yesnomaybe = raw_input("Keep current window [Y/n]? ")
+            if yesnomaybe == "" or yesnomaybe == "y" or yesnomaybe == "Y":
+                # We keep the values as they are
+                loop = False
+            else:
+                print("Current values are width: {0} and height: {1} pixels".format(self.x_window, self.y_window))
+                self.x_window = int(raw_input("Enter pixel width: "))
+                self.y_window = int(raw_input("Enter pixel height: "))
 
-        self.wait_key(override=True)
-        # Here is where we prompt for alternative dimensions for the window...
-        self.x_window *= 1
-        self.y_window *= 1
+                # And crop to new size
+                image.crop(self.x_window, self.y_window)
 
         plt.close()
 
