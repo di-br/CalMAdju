@@ -319,6 +319,10 @@ class Core(object):
         plt.ion()
         self.display_reference()
 
+        print("\n                     Variance                "
+              "\n                     |        Gradient       "
+              "\n                     |        |        FFT   "
+              "\n                     \\        \\        \\     ")
         # TODO: make values user-selectable
         for value in [-20, -15, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 15, 20]:
             self._gphoto.set_af_microadjustment(value)
@@ -343,13 +347,13 @@ class Core(object):
             # At a later stage, we should really fit both (or also the FFT one)
             # independently and compare the results...
             self.display_current()
-            print("Sharpness estimators {s[0]:.4f}/{s[1]:.4f}/{s[2]:.4f} for adjustment {v:3d}".\
+            print("Sharpness estimators {s[0]:.4f} / {s[1]:.4f} / {s[2]:.4f} for adjustment {v:3d}".\
                   format(s=all_sharpnesses, v=value))
 
         self.wait_key()
 
         # Fit and find max
-        self.madj = self.find_best_madj()
+        self.find_best_madj()
 
         self.wait_key(override=True)
 
