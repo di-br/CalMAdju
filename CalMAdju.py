@@ -33,16 +33,19 @@ def run(argv=sys.argv):
     parser = argparse.ArgumentParser(prog=argv[0],
                                      description="Helps calibrate the micro-adjustments for your auto-focus system.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-m", "--metric", dest="metric", type=str, default=["variance", "fft"],
+                        help="sharpness metrics used for evaluation, possible values are"
+                        "variance, gradient, and fft", nargs="+")
     parser.add_argument("--no-camera", dest="nocamera", action="store_true",
                         help="do not use gphoto2 to interact with camera (simply process previously "
                         "taken images)")
     parser.add_argument("--manual-setting", dest="manual", action="store_true",
                         help="change the camera's settings manually instead of trying to script it")
-    parser.add_argument("--batch-mode", dest="batch", action="store_true",
+    parser.add_argument("-b", "--batch-mode", dest="batch", action="store_true",
                         help="run in batch mode without user interaction")
-    parser.add_argument("-i", "--image_path", metavar="path", type=str, default="images",
+    parser.add_argument("-i", "--image_path", metavar="PATH", type=str, default="images",
                         help="path to store/read images to/from")
-    parser.add_argument("-v", "--version", action="version", version="%(prog)s version: ALPHA",
+    parser.add_argument("-v", "--version", action="version", version="%(prog)s version: BETA",
                         help="show version")
 
     parser.set_defaults(path="images")
@@ -52,11 +55,21 @@ def run(argv=sys.argv):
 
     args = parser.parse_args()
 
+    # convert argument list in something Core understands
+    metric_list = []
+    for metric in args.metric:
+        if metric.lower() == "variance":
+            metric_list.append(Core.VARIANCE)
+        if metric.lower() == "fft":
+            metric_list.append(Core.FFT)
+        if metric.lower() == "gradient":
+            metric_list.append(Core.GRADIENT)
+
     # Run main script
-    runner = Core(base_dir=args.image_path, batch_mode=args.batch,
+    runner = Core(base_dir=args.image_path, batch_mode=args.batch, metrics=metric_list,
                   gp_cameraless_mode=args.nocamera, gp_camerasafe_mode=args.manual)
     runner.main()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()

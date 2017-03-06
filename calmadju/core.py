@@ -50,11 +50,12 @@ class Core(object):
 
     # Fraction of 'frequency range' (kind of, but not really) for FFT sharpness
     _FRACTION = 0.3
-    _VARIANCE, _GRADIENT, _FFT = range(3)
+    VARIANCE, GRADIENT, FFT = range(3)
 
 
-    def __init__(self, base_dir="images", batch_mode=False, gp_cameraless_mode=True,
-                 gp_camerasafe_mode=True):
+    def __init__(self, base_dir="images", batch_mode=False,
+                 metrics=[VARIANCE, FFT],
+                 gp_cameraless_mode=True, gp_camerasafe_mode=True):
         # Base directory for images taken/assessed
         self._base_dir = base_dir
         # Default filename for reference image
@@ -69,6 +70,8 @@ class Core(object):
         # Lists for adjustments and sharpness estimates
         self._adjustment = []
         self._sharpness = []
+        # List of selected sharpness metrics
+        self._selected = metrics
         ## Value of best estimate for the microadjustment
         #self.madj = 0.
         # Now get an instance of our gphoto helper...
@@ -98,7 +101,7 @@ class Core(object):
 
         # Compute a variance measure that should prefer a contrasty result,
         # thus a sharper one
-        score[self._VARIANCE] = np.mean(np.var(image.cropped_img))
+        score[self.VARIANCE] = np.mean(np.var(image.cropped_img))
 
         # Compute gradients in x and y that should prefer more edges,
         # so a sharper image
@@ -106,7 +109,7 @@ class Core(object):
         gnorm = np.sqrt(grad_x**2 + grad_y**2)
         # Normalise to max value, in the hope of compensating lighting variations?
         gnorm = gnorm / np.max(gnorm)
-        score[self._GRADIENT] = np.mean(gnorm)
+        score[self.GRADIENT] = np.mean(gnorm)
 
         # compute fft measure
         fft = np.fft.fft2(image.cropped_img)  # It may be better to compute FFT on larger
@@ -123,8 +126,8 @@ class Core(object):
         region_y_min = np.int(center_y - self._FRACTION*center_y)
         region_y_max = np.int(center_y + self._FRACTION*center_y)
         # Take region from center outwards, a fraction of frequencies
-        score[self._FFT] = np.sum(np.sqrt(fft_usable[region_x_min:region_x_max,
-                                                     region_y_min:region_y_max]))
+        score[self.FFT] = np.sum(np.sqrt(fft_usable[region_x_min:region_x_max,
+                                                    region_y_min:region_y_max]))
         return score
 
 
@@ -155,7 +158,7 @@ class Core(object):
             plt.show()
 
             yesnomaybe = raw_input("Keep current window [Y/n]? ")
-            if yesnomaybe == "" or yesnomaybe == "y" or yesnomaybe == "Y":
+            if yesnomaybe == "" or yesnomaybe.lower() == "y":
                 # We keep the values as they are
                 loop = False
             else:
@@ -215,7 +218,6 @@ class Core(object):
     def find_best_madj(self):
         """ Find best value by fitting a Gaussian. """
 
-        # TODO: make sharpness metric user-selectable
         import scipy
         from scipy.optimize import curve_fit
         from pkg_resources import parse_version
@@ -334,11 +336,10 @@ class Core(object):
             except NameError:
                 norm = sharpness
 
-            all_sharpnesses = [sharpness[self._VARIANCE] / norm[self._VARIANCE], \
-                               sharpness[self._GRADIENT] / norm[self._GRADIENT], \
-                               sharpness[self._FFT] / norm[self._FFT]]
-            combined_sharpness = [sharpness[self._VARIANCE] / norm[self._VARIANCE], \
-                                  sharpness[self._FFT] / norm[self._FFT]]
+            all_sharpnesses = [sharpness[self.VARIANCE] / norm[self.VARIANCE], \
+                               sharpness[self.GRADIENT] / norm[self.GRADIENT], \
+                               sharpness[self.FFT] / norm[self.FFT]]
+            combined_sharpness = [sharpness[i] / norm[i] for i in self._selected]
             # Keep the result, assuming both parameters are ok, so average the
             # normalised values
             self._adjustment.append(value)
