@@ -35,7 +35,7 @@ I have (had?) it working for my camera and one lens. Thanks to a recent version 
 
 The sharpness parameter(s) certainly are wild guesses, the setup possibly wasn't ideal, but the plots did reveal a trend in the adjustment setting. I say 'reveal a trend': it may all be noise and a foolish setting after all - tests out and about are still pending.
 
-This shows an early screenshot with two `gnuplot` windows showing two sharpness parameters for two either to focal lengths or simply two iterations of the script (can't remember, my guess is focal lengths).
+This shows an early screenshot with two `gnuplot` windows showing two sharpness parameters for either two focal lengths or simply two iterations of the script (can't remember, my guess is focal lengths).
 ![an early screenshot](https://github.com/di-br/CalMAdju/blob/master/examples/AFMADJ_01.png "an early screenshot")
 
 The current evolution of things is shown in the next few pictures. Starting with a 'progress window' while the script is running:

@@ -47,47 +47,34 @@ class Core(object):
     We're aiming to help calibrating your camera's AF system.
     """
 
-    # Base directory for images taken/assessed
-    base_dir = ''
-    # Default filename for reference image
-    reference_image_filename = ""
-    # Filename for currently taken and estimated image
-    current_image_filename = ""
-    # Start with some extent
-    x_window = 0
-    y_window = 0
-    # Do we run in batch mode and don't ask the user to interact
-    batch = False
-    # Do we use gphoto2 to interact with the camera or do we stay 'safe'
-    dry = True
-    # Manual adjustment of camera settings
-    manual = True
-    # Lists for adjustments and sharpness estimates
-    adjustment = []
-    sharpness = []
+
     # Fraction of 'frequency range' (kind of, but not really) for FFT sharpness
-    fraction = 0.
-    # Value of best estimate for the microadjustment
-    madj = 0.
+    _FRACTION = 0.3
+    _VARIANCE, _GRADIENT, _FFT = range(3)
 
 
-    def __init__(self, base_dir="images", batch_mode=False, cameraless_mode=True,
-                 camerasafe_mode=True):
-        self.base_dir = base_dir
+    def __init__(self, base_dir="images", batch_mode=False, gp_cameraless_mode=True,
+                 gp_camerasafe_mode=True):
+        # Base directory for images taken/assessed
+        self._base_dir = base_dir
+        # Default filename for reference image
         self.reference_image_filename = "reference.jpg"
+        # Filename for currently taken and estimated image
         self.current_image_filename = ""
-        self.x_window = 900
-        self.y_window = 600
-        self.batch = batch_mode
-        self.dry = cameraless_mode
-        self.manual = camerasafe_mode
-        self.adjustment = []
-        self.sharpness = []
-        self.fraction = 0.3
-        self.madj = 0.
+        # Start with a default extent
+        self._x_window = 900
+        self._y_window = 600
+        # Do we run in batch mode and don't ask the user to interact
+        self._batch = batch_mode
+        # Lists for adjustments and sharpness estimates
+        self._adjustment = []
+        self._sharpness = []
+        ## Value of best estimate for the microadjustment
+        #self.madj = 0.
         # Now get an instance of our gphoto helper...
-        self.gphoto = Gphoto(base_dir=self.base_dir, batch_mode=self.batch,
-                             cameraless_mode=self.dry, camerasafe_mode=self.manual)
+        self._gphoto = Gphoto(base_dir=self._base_dir, batch_mode=self._batch,
+                              cameraless_mode=gp_cameraless_mode,
+                              camerasafe_mode=gp_camerasafe_mode)
 
 
     @staticmethod
@@ -103,15 +90,15 @@ class Core(object):
         """
 
         # List our score values
-        score = []
+        score = [0.0, 0.0, 0.0]
 
         # Read file
-        image = Image(self.base_dir, self.current_image_filename)
-        image.crop(self.x_window, self.y_window)
+        image = Image(self._base_dir, self.current_image_filename)
+        image.crop(self._x_window, self._y_window)
 
         # Compute a variance measure that should prefer a contrasty result,
         # thus a sharper one
-        score.append(np.mean(np.var(image.cropped_img)))
+        score[self._VARIANCE] = np.mean(np.var(image.cropped_img))
 
         # Compute gradients in x and y that should prefer more edges,
         # so a sharper image
@@ -119,7 +106,7 @@ class Core(object):
         gnorm = np.sqrt(grad_x**2 + grad_y**2)
         # Normalise to max value, in the hope of compensating lighting variations?
         gnorm = gnorm / np.max(gnorm)
-        score.append(np.mean(gnorm))
+        score[self._GRADIENT] = np.mean(gnorm)
 
         # compute fft measure
         fft = np.fft.fft2(image.cropped_img)  # It may be better to compute FFT on larger
@@ -131,13 +118,13 @@ class Core(object):
         # Find center of frequencies and the extent
         center_x = np.shape(fft)[0] / 2
         center_y = np.shape(fft)[1] / 2
-        region_x_min = np.int(center_x - self.fraction*center_x)
-        region_x_max = np.int(center_x + self.fraction*center_x)
-        region_y_min = np.int(center_y - self.fraction*center_y)
-        region_y_max = np.int(center_y + self.fraction*center_y)
+        region_x_min = np.int(center_x - self._FRACTION*center_x)
+        region_x_max = np.int(center_x + self._FRACTION*center_x)
+        region_y_min = np.int(center_y - self._FRACTION*center_y)
+        region_y_max = np.int(center_y + self._FRACTION*center_y)
         # Take region from center outwards, a fraction of frequencies
-        score.append(np.sum(np.sqrt(fft_usable[region_x_min:region_x_max,
-                                               region_y_min:region_y_max])))
+        score[self._FFT] = np.sum(np.sqrt(fft_usable[region_x_min:region_x_max,
+                                                     region_y_min:region_y_max]))
         return score
 
 
@@ -147,9 +134,9 @@ class Core(object):
         """
 
         # Read file
-        image = Image(self.base_dir, self.reference_image_filename)
+        image = Image(self._base_dir, self.reference_image_filename)
         # And crop to standard size
-        image.crop(self.x_window, self.y_window)
+        image.crop(self._x_window, self._y_window)
 
         # Display both images and keep updating if we need to
         plt.ion()
@@ -172,12 +159,12 @@ class Core(object):
                 # We keep the values as they are
                 loop = False
             else:
-                print("Current values are width: {0} and height: {1} pixels".format(self.x_window, self.y_window))
-                self.x_window = int(raw_input("Enter pixel width: "))
-                self.y_window = int(raw_input("Enter pixel height: "))
+                print("Current values are width: {0} and height: {1} pixels".format(self._x_window, self._y_window))
+                self._x_window = int(raw_input("Enter pixel width: "))
+                self._y_window = int(raw_input("Enter pixel height: "))
 
                 # And crop to new size
-                image.crop(self.x_window, self.y_window)
+                image.crop(self._x_window, self._y_window)
 
         plt.close()
 
@@ -186,8 +173,8 @@ class Core(object):
         """ Display reference image on lhs of a grid. """
 
         # Read reference file
-        reference_image = Image(self.base_dir, self.reference_image_filename)
-        reference_image.crop(self.x_window, self.y_window)
+        reference_image = Image(self._base_dir, self.reference_image_filename)
+        reference_image.crop(self._x_window, self._y_window)
 
         plt.subplot(2, 2, 1)
         plt.imshow(reference_image.cropped_img, cmap="gray")
@@ -203,11 +190,11 @@ class Core(object):
         """
 
         # Read 'adjusted' file
-        current_image = Image(self.base_dir, self.current_image_filename)
-        current_image.crop(self.x_window, self.y_window)
+        current_image = Image(self._base_dir, self.current_image_filename)
+        current_image.crop(self._x_window, self._y_window)
 
         # Extract sharpness data
-        data = np.array([self.adjustment, self.sharpness])
+        data = np.array([self._adjustment, self._sharpness])
         minval = np.min(data[1, :])
         maxval = np.max(data[1, :])
 
@@ -241,22 +228,22 @@ class Core(object):
               "'region'\n")
 
         # Extract sharpness data
-        data = np.array([self.adjustment, self.sharpness])
+        data = np.array([self._adjustment, self._sharpness])
         minval = np.min(data[1, :])
         maxval = np.max(data[1, :])
 
         try:
             if parse_version(scipy.version.version) == parse_version("0.18.0"):
                 # yet to be tested
-                popt, pcov = curve_fit(fit_function,
-                                       data[0, :], data[1, :],
-                                       p0=[maxval, 0, 1],
-                                       bounds=([0, np.min(data[0, :]), 1e-6],
-                                               [2*maxval, np.max(data[0, :]), 1.]))
+                popt = curve_fit(fit_function,
+                                 data[0, :], data[1, :],
+                                 p0=[maxval, 0, 1],
+                                 bounds=([0, np.min(data[0, :]), 1e-6],
+                                         [2*maxval, np.max(data[0, :]), 1.]))[0]
             else:
-                popt, pcov = curve_fit(fit_function,
-                                       data[0, :], data[1, :],
-                                       p0=[maxval, 0, 1])
+                popt = curve_fit(fit_function,
+                                 data[0, :], data[1, :],
+                                 p0=[maxval, 0, 1])[0]
         except ValueError:
             print("Something went wrong with the measured values, fit not possible")
             return 0
@@ -296,7 +283,7 @@ class Core(object):
         '''
         result = None
 
-        if self.batch and not override:
+        if self._batch and not override:
             return result
 
         if print_msg:
@@ -313,13 +300,13 @@ class Core(object):
 
         self.greeting()
 
-        self.gphoto.check_version()
-        self.gphoto.find_camera()
-        self.gphoto.prepare_camera()
+        self._gphoto.check_version()
+        self._gphoto.find_camera()
+        self._gphoto.prepare_camera()
 
         # Take a reference image
         print("Taking a reference image")
-        self.gphoto.get_image(self.reference_image_filename)
+        self._gphoto.get_image(self.reference_image_filename)
 
         # Show reference image and get user to adjust relevant area
         self.find_center()
@@ -334,25 +321,30 @@ class Core(object):
 
         # TODO: make values user-selectable
         for value in [-20, -15, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 15, 20]:
-            self.gphoto.set_af_microadjustment(value)
+            self._gphoto.set_af_microadjustment(value)
             self.current_image_filename = "AFtest_iter_{r}_adj_{v}.jpg".format(r=run, v=value)
-            self.gphoto.get_image(self.current_image_filename)
+            self._gphoto.get_image(self.current_image_filename)
             sharpness = self.estimate_sharpness()
             try:
                 norm
             except NameError:
                 norm = sharpness
 
-            combined_sharpness = [sharpness[0] / norm[0], sharpness[2] / norm[2]]
+            all_sharpnesses = [sharpness[self._VARIANCE] / norm[self._VARIANCE], \
+                               sharpness[self._GRADIENT] / norm[self._GRADIENT], \
+                               sharpness[self._FFT] / norm[self._FFT]]
+            combined_sharpness = [sharpness[self._VARIANCE] / norm[self._VARIANCE], \
+                                  sharpness[self._FFT] / norm[self._FFT]]
             # Keep the result, assuming both parameters are ok, so average the
             # normalised values
-            self.adjustment.append(value)
-            self.sharpness.append(np.mean(combined_sharpness))
+            self._adjustment.append(value)
+            self._sharpness.append(np.mean(combined_sharpness))
 
             # At a later stage, we should really fit both (or also the FFT one)
             # independently and compare the results...
             self.display_current()
-            print("Sharpness {0} for adjustment {1}".format(combined_sharpness, value))
+            print("Sharpness estimators {s[0]:.4f}/{s[1]:.4f}/{s[2]:.4f} for adjustment {v:3d}".\
+                  format(s=all_sharpnesses, v=value))
 
         self.wait_key()
 

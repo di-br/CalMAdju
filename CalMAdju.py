@@ -54,7 +54,7 @@ def run(argv=sys.argv):
 
     # Run main script
     runner = Core(base_dir=args.image_path, batch_mode=args.batch,
-                  cameraless_mode=args.nocamera, camerasafe_mode=args.manual)
+                  gp_cameraless_mode=args.nocamera, gp_camerasafe_mode=args.manual)
     runner.main()
 
 

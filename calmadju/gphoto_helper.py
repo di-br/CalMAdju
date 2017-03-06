@@ -64,33 +64,30 @@ class Gphoto(object):
     This module deals with the camera interaction.
     """
 
-    # Base directory for images taken/assessed
-    base_dir = ''
-    # Do we run in batch mode and don't ask the user to interact
-    batch = False
-    # Set initial values for detected camera
-    dry = False
-    manual = False
-    auto_cam = False
-    cameras = []
-    n_cameras_found = 0
-
 
     def __init__(self, base_dir, batch_mode, cameraless_mode, camerasafe_mode):
-        self.base_dir = base_dir
-        self.batch = batch_mode
-        self.dry = cameraless_mode
-        self.manual = camerasafe_mode
-        self.n_cameras_found = 0
-        if self.manual:
+        # Base directory for images taken/assessed
+        self._base_dir = base_dir
+        # Do we run in batch mode and don't ask the user to interact
+        self._batch = batch_mode
+        # Do we use gphoto2 to interact with the camera or do we stay 'safe'
+        self._dry = cameraless_mode
+        # Manual adjustment of camera settings
+        self._manual = camerasafe_mode
+        # Set initial values for detected camera
+        self._auto_cam = False
+        self._cameras = []
+        self._n_cameras_found = 0
+
+        if self._manual:
             # This line will force the AF auto-set to always fail
-            self.cameras.append("Test mode")
-            self.auto_cam = False
+            self._cameras.append("Test mode")
+            self._auto_cam = False
 
 
     def check_version(self):
         ''' Check if we have a sufficient libgphoto2 version. '''
-        if self.dry:
+        if self._dry:
             return
 
         # Enquire gphoto2 version
@@ -107,8 +104,8 @@ class Gphoto(object):
                 version_minor, \
                 version_revision = (version.split(".")[:3])
 
-        print("Found gphoto2 version {0}.{1}.{2}".format(
-              version_major, version_minor, version_revision))
+        print("Found gphoto2 version {0}.{1}.{2}".\
+               format(version_major, version_minor, version_revision))
 
         # We know v2.5.11 to work, so check for it
         from pkg_resources import parse_version
@@ -121,7 +118,7 @@ class Gphoto(object):
         ''' Identify the attached camera and switch between manual and
         automatic microadjustment.
         '''
-        if self.dry:
+        if self._dry:
             return
 
         self.wait_key("Please attach your camera, switch it on, and press return.")
@@ -135,36 +132,36 @@ class Gphoto(object):
         for line in gp_detect:
             # Why is there a 'Loading sth usb something' message...?
             if not re.match(r"(Loadin|Model|(-)+)", line, re.IGNORECASE):
-                self.n_cameras_found = self.n_cameras_found + 1
-                self.cameras.append(line.split()[0])
+                self._n_cameras_found = self._n_cameras_found + 1
+                self._cameras.append(line.split()[0])
 
         # Do we _have_ a camera?
-        if self.n_cameras_found < 1:
+        if self._n_cameras_found < 1:
             print("\nNo camera found!\n")
             exit(1)
         # Or more than one we don't want to deal with?
-        if self.n_cameras_found >= 1:
+        if self._n_cameras_found >= 1:
             print("Camera(s) found:")
-            for cam in self.cameras:
+            for cam in self._cameras:
                 print("\t{0}".format(cam))
-            if self.n_cameras_found > 1:
+            if self._n_cameras_found > 1:
                 print("\nPlease attach only one camera!\n")
                 exit(1)
 
         # Do we know the camera's custom function string?
         # AND, do we want to change them automagically?
-        if self.cameras[0] in CUSTOMFUNCEX and self.auto_cam:
+        if self._cameras[0] in CUSTOMFUNCEX and self._auto_cam:
             print("We match settings for the custom functions ex call\n")
-            self.auto_cam = True
+            self._auto_cam = True
         else:
             print("No known settings for this camera, you will have to adjust the "
                   "settings manually\n")
-            self.auto_cam = False
+            self._auto_cam = False
 
 
     def prepare_camera(self):
         ''' Advise the user on how to set up the camera. '''
-        if self.dry:
+        if self._dry:
             return
 
         print(CAMERA_BANNER)
@@ -175,12 +172,12 @@ class Gphoto(object):
         ''' Change the AF microadjustment, either manually (by the user) or
         automagically (for certain cameras).
         '''
-        if self.dry:
+        if self._dry:
             return
 
-        if self.auto_cam:
+        if self._auto_cam:
             # Change the adjustment value ourselves
-            pre, post = CUSTOMFUNCEX[self.cameras[0]].split('VALUE')[:2]
+            pre, post = CUSTOMFUNCEX[self._cameras[0]].split('VALUE')[:2]
             if value >= 0:
                 hexvalue = "%02x" % value
             else:
@@ -197,10 +194,10 @@ class Gphoto(object):
 
     def get_image(self, filename):
         ''' Capture an image and download said image. '''
-        if self.dry:
+        if self._dry:
             return
 
-        filename = os.path.join(self.base_dir, filename)
+        filename = os.path.join(self._base_dir, filename)
         command = ["--filename={0}".format(filename), "--force-overwrite",
                    "--capture-image-and-download"]
         try:
@@ -218,7 +215,7 @@ class Gphoto(object):
         '''
         result = None
 
-        if self.batch and not override:
+        if self._batch and not override:
             return result
 
         if print_msg:
